@@ -1,0 +1,7 @@
+[package]
+name = "rfe"
+version = "0.1.0"
+authors = ["Zach Leytus <zach.leytus@pm.me>"]
+edition = "2018"
+
+[dependencies]
