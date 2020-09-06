@@ -5,3 +5,6 @@ authors = ["Zach Leytus <zach.leytus@pm.me>"]
 edition = "2018"
 
 [dependencies]
+num_enum = "0.5.1"
+serialport = "3.3.0"
+thiserror = "1.0.20"

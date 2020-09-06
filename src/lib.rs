@@ -1,1 +1,63 @@
+mod config;
+mod message;
+mod rf_explorer;
+mod setup;
 
+pub use config::RfExplorerConfig;
+pub use message::RfExplorerMessage;
+pub use rf_explorer::RfExplorer;
+pub use setup::RfExplorerSetup;
+
+use num_enum::TryFromPrimitive;
+use serialport;
+use serialport::Error;
+use std::convert::TryFrom;
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum RfExplorerModel {
+    Rfe433 = 0,
+    Rfe868 = 1,
+    Rfe915 = 2,
+    RfeWSub1G = 3,
+    Rfe2400 = 4,
+    RfeWSub3G = 5,
+    Rfe6G = 6,
+    RfeWSub1GPlus = 10,
+    RfeAudioPro = 11,
+    Rfe2400Plus = 12,
+    Rfe4GPlus = 13,
+    Rfe6GPlus = 14,
+}
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum RfExplorerMode {
+    SpectrumAnalyzer = 0,
+    RfGenerator = 1,
+    WifiAnalyzer = 2,
+    AnalyzerTracking = 5,
+    RfSniffer = 6,
+    CwTransmitter = 60,
+    SweepFrequency = 61,
+    SweepAmplitude = 62,
+    GeneratorTracking = 63,
+    Unknown = 255,
+}
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum CalculatorMode {
+    Normal = 0,
+    Max,
+    Avg,
+    Overwrite,
+    MaxHold,
+}
+
+pub fn available_rf_explorers() -> Result<Vec<RfExplorer>, Error> {
+    Ok(serialport::available_ports()?
+        .iter()
+        .filter_map(|serial_port_info| RfExplorer::try_from(serial_port_info).ok())
+        .collect())
+}
