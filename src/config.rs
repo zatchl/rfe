@@ -3,7 +3,7 @@ use std::convert::TryFrom;
 use std::str::{self, FromStr};
 use thiserror::Error;
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct RfExplorerConfig {
     start_freq_khz: f64,
     freq_step_hz: f64,
