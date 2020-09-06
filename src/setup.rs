@@ -59,6 +59,7 @@ impl TryFrom<&[u8]> for RfExplorerSetup {
                         .next()
                         .ok_or_else(|| ParseSetupError::MissingFieldError)?,
                 )
+                .trim()
                 .to_string(),
             })
         } else {
