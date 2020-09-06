@@ -2,7 +2,7 @@ use crate::RfExplorerModel;
 use std::{convert::TryFrom, str, str::FromStr};
 use thiserror::Error;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct RfExplorerSetup {
     main_model: RfExplorerModel,
     expansion_model: Option<RfExplorerModel>,
