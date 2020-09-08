@@ -1,4 +1,4 @@
-use crate::{CalculatorMode, RfExplorerMode};
+use crate::{RfExplorerCalcMode, RfExplorerMode};
 use std::convert::TryFrom;
 use std::str::{self, FromStr};
 use thiserror::Error;
@@ -17,7 +17,7 @@ pub struct RfExplorerConfig {
     max_span_khz: f64,
     rbw_khz: Option<f64>,
     amp_offset_db: Option<i16>,
-    calculator_mode: Option<CalculatorMode>,
+    calculator_mode: Option<RfExplorerCalcMode>,
 }
 
 #[derive(Error, Debug)]
@@ -90,7 +90,7 @@ impl RfExplorerConfig {
         self.amp_offset_db
     }
 
-    pub fn calculator_mode(&self) -> Option<CalculatorMode> {
+    pub fn calculator_mode(&self) -> Option<RfExplorerCalcMode> {
         self.calculator_mode
     }
 }
@@ -120,7 +120,8 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
                 max_span_khz: parse_field(fields.next())?,
                 rbw_khz: parse_field(fields.next()).ok(),
                 amp_offset_db: parse_field(fields.next()).ok(),
-                calculator_mode: CalculatorMode::try_from(parse_field::<u8>(fields.next())?).ok(),
+                calculator_mode: RfExplorerCalcMode::try_from(parse_field::<u8>(fields.next())?)
+                    .ok(),
             })
         } else {
             Err(ParseConfigError::InvalidFormatError)

@@ -47,7 +47,7 @@ pub enum RfExplorerMode {
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive)]
 #[repr(u8)]
-pub enum CalculatorMode {
+pub enum RfExplorerCalcMode {
     Normal = 0,
     Max,
     Avg,
