@@ -23,22 +23,22 @@ pub struct RfExplorerConfig {
 #[derive(Error, Debug)]
 pub enum ParseConfigError {
     #[error(transparent)]
-    ConvertToModeError(#[from] <RfExplorerMode as TryFrom<u8>>::Error),
+    InvalidRfExplorerMode(#[from] <RfExplorerMode as TryFrom<u8>>::Error),
 
     #[error("Invalid RfExplorerConfig: expected bytes to start with #C2-F:")]
-    InvalidFormatError,
+    InvalidFormat,
 
     #[error("A required field is missing from the bytes")]
-    MissingFieldError,
+    MissingField,
 
     #[error(transparent)]
-    ParseFloatError(#[from] std::num::ParseFloatError),
+    InvalidFloat(#[from] std::num::ParseFloatError),
 
     #[error(transparent)]
-    ParseIntError(#[from] std::num::ParseIntError),
+    InvalidInt(#[from] std::num::ParseIntError),
 
     #[error(transparent)]
-    Utf8Error(#[from] std::str::Utf8Error),
+    InvalidUtf8(#[from] std::str::Utf8Error),
 }
 
 impl RfExplorerConfig {
@@ -102,7 +102,7 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
         if value.starts_with("#C2-F:".as_bytes()) {
             let mut fields = value
                 .get(6..)
-                .ok_or_else(|| ParseConfigError::MissingFieldError)?
+                .ok_or_else(|| ParseConfigError::MissingField)?
                 .split(|byte| *byte == ',' as u8);
 
             // rbw_khz, amp_offset_db, and calculator_mode are optional fields that were introduced in firmware updates
@@ -124,7 +124,7 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
                     .ok(),
             })
         } else {
-            Err(ParseConfigError::InvalidFormatError)
+            Err(ParseConfigError::InvalidFormat)
         }
     }
 }
@@ -135,7 +135,7 @@ where
     ParseConfigError: From<T::Err>,
 {
     Ok(T::from_str(
-        str::from_utf8(field.ok_or_else(|| ParseConfigError::MissingFieldError)?)?.trim(),
+        str::from_utf8(field.ok_or_else(|| ParseConfigError::MissingField)?)?.trim(),
     )?)
 }
 

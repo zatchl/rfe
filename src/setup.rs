@@ -12,19 +12,19 @@ pub struct RfExplorerSetup {
 #[derive(Error, Debug)]
 pub enum ParseSetupError {
     #[error(transparent)]
-    ConvertToModelError(#[from] <RfExplorerModel as TryFrom<u8>>::Error),
+    InvalidRfExplorerModel(#[from] <RfExplorerModel as TryFrom<u8>>::Error),
 
     #[error("Invalid RfExplorerSetup: expected bytes to start with #C2-M:")]
-    InvalidFormatError,
+    InvalidFormat,
 
     #[error("A required field is missing from the bytes")]
-    MissingFieldError,
+    MissingField,
 
     #[error(transparent)]
-    ParseIntError(#[from] std::num::ParseIntError),
+    InvalidInt(#[from] std::num::ParseIntError),
 
     #[error(transparent)]
-    Utf8Error(#[from] std::str::Utf8Error),
+    InvalidUtf8(#[from] std::str::Utf8Error),
 }
 
 impl RfExplorerSetup {
@@ -48,22 +48,20 @@ impl TryFrom<&[u8]> for RfExplorerSetup {
         if value.starts_with("#C2-M:".as_bytes()) {
             let mut fields = value
                 .get(6..)
-                .ok_or_else(|| ParseSetupError::MissingFieldError)?
+                .ok_or_else(|| ParseSetupError::MissingField)?
                 .split(|byte| *byte == ',' as u8);
 
             Ok(RfExplorerSetup {
                 main_model: RfExplorerModel::try_from(parse_field::<u8>(fields.next())?)?,
                 expansion_model: RfExplorerModel::try_from(parse_field::<u8>(fields.next())?).ok(),
                 firmware_version: String::from_utf8_lossy(
-                    fields
-                        .next()
-                        .ok_or_else(|| ParseSetupError::MissingFieldError)?,
+                    fields.next().ok_or_else(|| ParseSetupError::MissingField)?,
                 )
                 .trim()
                 .to_string(),
             })
         } else {
-            Err(ParseSetupError::InvalidFormatError)
+            Err(ParseSetupError::InvalidFormat)
         }
     }
 }
@@ -74,7 +72,7 @@ where
     ParseSetupError: From<T::Err>,
 {
     Ok(T::from_str(
-        str::from_utf8(field.ok_or_else(|| ParseSetupError::MissingFieldError)?)?.trim(),
+        str::from_utf8(field.ok_or_else(|| ParseSetupError::MissingField)?)?.trim(),
     )?)
 }
 
