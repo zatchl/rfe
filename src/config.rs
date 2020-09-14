@@ -99,11 +99,11 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
     type Error = ParseConfigError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.starts_with("#C2-F:".as_bytes()) {
+        if value.starts_with(b"#C2-F:") {
             let mut fields = value
                 .get(6..)
                 .ok_or_else(|| ParseConfigError::MissingField)?
-                .split(|byte| *byte == ',' as u8);
+                .split(|&byte| byte == b',');
 
             // rbw_khz, amp_offset_db, and calculator_mode are optional fields that were introduced in firmware updates
             // If there's any sort of error parsing those fields, discard the error and set the field to None

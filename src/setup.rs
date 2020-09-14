@@ -45,11 +45,11 @@ impl TryFrom<&[u8]> for RfExplorerSetup {
     type Error = ParseSetupError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.starts_with("#C2-M:".as_bytes()) {
+        if value.starts_with(b"#C2-M:") {
             let mut fields = value
                 .get(6..)
                 .ok_or_else(|| ParseSetupError::MissingField)?
-                .split(|byte| *byte == ',' as u8);
+                .split(|&byte| byte == b',');
 
             Ok(RfExplorerSetup {
                 main_model: RfExplorerModel::try_from(parse_field::<u8>(fields.next())?)?,
