@@ -63,6 +63,14 @@ pub enum RfExplorerWifiMode {
     FiveGhz,
 }
 
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum RfExplorerDspMode {
+    Auto = b'0',
+    Filter = b'1',
+    Fast = b'2',
+}
+
 pub fn available_rf_explorers() -> Result<Vec<RfExplorer>, Error> {
     Ok(serialport::available_ports()?
         .iter()
