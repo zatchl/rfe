@@ -71,6 +71,14 @@ pub enum RfExplorerDspMode {
     Fast = b'2',
 }
 
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum RfExplorerInputStage {
+    Bypass = b'0',
+    Attenuator30dB = b'1',
+    Lna25dB = b'2',
+}
+
 pub fn available_rf_explorers() -> Result<Vec<RfExplorer>, Error> {
     Ok(serialport::available_ports()?
         .iter()
