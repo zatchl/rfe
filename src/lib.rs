@@ -55,6 +55,14 @@ pub enum RfExplorerCalcMode {
     MaxHold,
 }
 
+#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[repr(u8)]
+pub enum RfExplorerWifiMode {
+    Disable = 0,
+    TwoPointFourGhz,
+    FiveGhz,
+}
+
 pub fn available_rf_explorers() -> Result<Vec<RfExplorer>, Error> {
     Ok(serialport::available_ports()?
         .iter()
