@@ -1,16 +1,17 @@
 mod config;
-mod message;
 mod rf_explorer;
+mod serial_number;
 mod setup;
+mod sweep;
 
-pub use config::RfExplorerConfig;
-pub use message::RfExplorerMessage;
+pub use config::{ParseConfigError, RfExplorerConfig};
 pub use rf_explorer::RfExplorer;
-pub use setup::RfExplorerSetup;
+pub use serial_number::{ParseSerialNumberError, RfExplorerSerialNumber};
+pub use setup::{ParseSetupError, RfExplorerSetup};
+pub use sweep::{ParseSweepError, RfExplorerSweep};
 
 use num_enum::TryFromPrimitive;
-use serialport;
-use serialport::Error;
+use serialport::{self, Error};
 use std::convert::TryFrom;
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive)]
