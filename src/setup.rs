@@ -25,6 +25,9 @@ pub enum ParseSetupError {
 
     #[error(transparent)]
     InvalidUtf8(#[from] std::str::Utf8Error),
+
+    #[error(transparent)]
+    InvalidString(#[from] std::string::ParseError),
 }
 
 impl RfExplorerSetup {
@@ -54,11 +57,7 @@ impl TryFrom<&[u8]> for RfExplorerSetup {
             Ok(RfExplorerSetup {
                 main_model: RfExplorerModel::try_from(parse_field::<u8>(fields.next())?)?,
                 expansion_model: RfExplorerModel::try_from(parse_field::<u8>(fields.next())?).ok(),
-                firmware_version: String::from_utf8_lossy(
-                    fields.next().ok_or_else(|| ParseSetupError::MissingField)?,
-                )
-                .trim()
-                .to_string(),
+                firmware_version: parse_field::<String>(fields.next())?,
             })
         } else {
             Err(ParseSetupError::InvalidFormat)
