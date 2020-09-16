@@ -1,12 +1,12 @@
 use std::{convert::TryFrom, str};
 use thiserror::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct RfExplorerSerialNumber {
     serial_number: String,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum ParseSerialNumberError {
     #[error(
         "Invalid RfExplorerSerialNumber: expected bytes to start with #Sn and be 19 bytes long"
@@ -36,5 +36,32 @@ impl TryFrom<&[u8]> for RfExplorerSerialNumber {
         } else {
             Err(ParseSerialNumberError::InvalidFormat)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn reject_short_serial_number() {
+        assert!(RfExplorerSerialNumber::try_from(b"#Sn02CDIO7ACD".as_ref()).is_err());
+    }
+
+    #[test]
+    fn reject_long_serial_number() {
+        assert!(
+            RfExplorerSerialNumber::try_from(b"#Sn02CDIO7ACDG49BTO7QRH4ZO1B39D".as_ref()).is_err()
+        );
+    }
+
+    #[test]
+    fn reject_with_invalid_prefix() {
+        assert!(RfExplorerSerialNumber::try_from(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
+    }
+
+    #[test]
+    fn accept_valid_serial_number() {
+        assert!(RfExplorerSerialNumber::try_from(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok())
     }
 }
