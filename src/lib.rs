@@ -14,7 +14,7 @@ use num_enum::TryFromPrimitive;
 use serialport::{self, Error};
 use std::convert::TryFrom;
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
 pub enum RfExplorerModel {
     Rfe433 = 0,
