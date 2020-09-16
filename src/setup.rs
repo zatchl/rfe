@@ -30,6 +30,16 @@ pub enum ParseSetupError {
     InvalidString(#[from] std::string::ParseError),
 }
 
+fn parse_field<T>(field: Option<&[u8]>) -> Result<T, ParseSetupError>
+where
+    T: FromStr,
+    ParseSetupError: From<T::Err>,
+{
+    Ok(T::from_str(
+        str::from_utf8(field.ok_or_else(|| ParseSetupError::MissingField)?)?.trim(),
+    )?)
+}
+
 impl RfExplorerSetup {
     pub fn main_model(&self) -> RfExplorerModel {
         self.main_model
@@ -63,16 +73,6 @@ impl TryFrom<&[u8]> for RfExplorerSetup {
             Err(ParseSetupError::InvalidFormat)
         }
     }
-}
-
-fn parse_field<T>(field: Option<&[u8]>) -> Result<T, ParseSetupError>
-where
-    T: FromStr,
-    ParseSetupError: From<T::Err>,
-{
-    Ok(T::from_str(
-        str::from_utf8(field.ok_or_else(|| ParseSetupError::MissingField)?)?.trim(),
-    )?)
 }
 
 #[cfg(test)]

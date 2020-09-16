@@ -1,6 +1,5 @@
 use crate::{RfExplorerCalcMode, RfExplorerMode};
-use std::convert::TryFrom;
-use std::str::{self, FromStr};
+use std::{convert::TryFrom, str, str::FromStr};
 use thiserror::Error;
 
 #[derive(Debug, Copy, Clone)]
@@ -39,6 +38,16 @@ pub enum ParseConfigError {
 
     #[error(transparent)]
     InvalidUtf8(#[from] std::str::Utf8Error),
+}
+
+fn parse_field<T>(field: Option<&[u8]>) -> Result<T, ParseConfigError>
+where
+    T: FromStr,
+    ParseConfigError: From<T::Err>,
+{
+    Ok(T::from_str(
+        str::from_utf8(field.ok_or_else(|| ParseConfigError::MissingField)?)?.trim(),
+    )?)
 }
 
 impl RfExplorerConfig {
@@ -127,16 +136,6 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
             Err(ParseConfigError::InvalidFormat)
         }
     }
-}
-
-fn parse_field<T>(field: Option<&[u8]>) -> Result<T, ParseConfigError>
-where
-    T: FromStr,
-    ParseConfigError: From<T::Err>,
-{
-    Ok(T::from_str(
-        str::from_utf8(field.ok_or_else(|| ParseConfigError::MissingField)?)?.trim(),
-    )?)
 }
 
 #[cfg(test)]
