@@ -129,8 +129,13 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
                 max_span_khz: parse_field(fields.next())?,
                 rbw_khz: parse_field(fields.next()).ok(),
                 amp_offset_db: parse_field(fields.next()).ok(),
-                calculator_mode: RfExplorerCalcMode::try_from(parse_field::<u8>(fields.next())?)
-                    .ok(),
+                calculator_mode: {
+                    if let Ok(field) = parse_field::<u8>(fields.next()) {
+                        RfExplorerCalcMode::try_from(field).ok()
+                    } else {
+                        None
+                    }
+                },
             })
         } else {
             Err(ParseConfigError::InvalidFormat)
