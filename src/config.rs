@@ -139,4 +139,69 @@ impl TryFrom<&[u8]> for RfExplorerConfig {
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_6g_combo_config() {
+        let bytes =
+            b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000,00200,0000,000";
+        let config = RfExplorerConfig::try_from(bytes.as_ref()).unwrap();
+        assert_eq!(config.start_freq_khz(), 5_249_000f64);
+        assert_eq!(config.freq_step_hz(), 196_428f64);
+        assert_eq!(config.amp_top_dbm(), -30);
+        assert_eq!(config.amp_bottom_dbm(), -118);
+        assert_eq!(config.sweep_points(), 112);
+        assert_eq!(config.expansion_module_active(), false);
+        assert_eq!(config.mode(), RfExplorerMode::SpectrumAnalyzer);
+        assert_eq!(config.min_freq_khz(), 4_850_000f64);
+        assert_eq!(config.max_freq_khz(), 6_100_000f64);
+        assert_eq!(config.max_span_khz(), 600_000f64);
+        assert_eq!(config.rbw_khz(), Some(200f64));
+        assert_eq!(config.amp_offset_db(), Some(0));
+        assert_eq!(config.calculator_mode(), Some(RfExplorerCalcMode::Normal));
+    }
+
+    #[test]
+    fn parse_wsub1g_plus_config() {
+        let bytes =
+            b"#C2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
+        let config = RfExplorerConfig::try_from(bytes.as_ref()).unwrap();
+        assert_eq!(config.start_freq_khz(), 96_000f64);
+        assert_eq!(config.freq_step_hz(), 90072f64);
+        assert_eq!(config.amp_top_dbm(), -10);
+        assert_eq!(config.amp_bottom_dbm(), -120);
+        assert_eq!(config.sweep_points(), 112);
+        assert_eq!(config.expansion_module_active(), false);
+        assert_eq!(config.mode(), RfExplorerMode::SpectrumAnalyzer);
+        assert_eq!(config.min_freq_khz(), 50f64);
+        assert_eq!(config.max_freq_khz(), 960000f64);
+        assert_eq!(config.max_span_khz(), 959950f64);
+        assert_eq!(config.rbw_khz(), Some(110f64));
+        assert_eq!(config.amp_offset_db(), Some(0));
+        assert_eq!(config.calculator_mode(), Some(RfExplorerCalcMode::Normal));
+    }
+
+    #[test]
+    fn parse_config_without_rbw_amp_offset_calc_mode() {
+        let bytes = b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000";
+        let config = RfExplorerConfig::try_from(bytes.as_ref()).unwrap();
+        assert_eq!(config.rbw_khz(), None);
+        assert_eq!(config.amp_offset_db(), None);
+        assert_eq!(config.calculator_mode(), None);
+    }
+
+    #[test]
+    fn fail_to_parse_config_with_incorrect_prefix() {
+        let bytes =
+            b"#D2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
+        assert!(RfExplorerConfig::try_from(bytes.as_ref()).is_err());
+    }
+
+    #[test]
+    fn fail_to_parse_config_with_invalid_start_freq() {
+        let bytes =
+            b"#C2-F:XX96000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
+        assert!(RfExplorerConfig::try_from(bytes.as_ref()).is_err());
+    }
+}
