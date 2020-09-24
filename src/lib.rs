@@ -31,7 +31,7 @@ pub enum RfExplorerModel {
     Rfe6GPlus = 14,
 }
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
 pub enum RfExplorerMode {
     SpectrumAnalyzer = 0,
@@ -46,7 +46,7 @@ pub enum RfExplorerMode {
     Unknown = 255,
 }
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
 pub enum RfExplorerCalcMode {
     Normal = 0,
