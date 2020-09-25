@@ -11,7 +11,7 @@ use std::{
     fmt::{self, Debug},
     io::{self, BufRead, BufReader},
     ops::RangeInclusive,
-    time::{Duration, SystemTime},
+    time::{Duration, Instant},
 };
 use thiserror::Error;
 
@@ -93,9 +93,9 @@ impl RfExplorer {
         self.serial_port.get_ref().clear(ClearBuffer::Input)?;
 
         let mut rfe_message_buf = Vec::new();
-        let start_time = SystemTime::now();
+        let start_time = Instant::now();
 
-        while start_time.elapsed().map_or(false, |e| e <= timeout) {
+        while start_time.elapsed() <= timeout {
             self.serial_port.read_until(b'\n', &mut rfe_message_buf)?;
 
             // It's possible that the byte '\n' could be used to represent an amplitude (-5 dBm)
@@ -308,9 +308,9 @@ impl RfExplorer {
         T: for<'a> TryFrom<&'a [u8]>,
     {
         let mut rfe_message_buf = Vec::new();
-        let start_time = SystemTime::now();
+        let start_time = Instant::now();
 
-        while start_time.elapsed().map_or(false, |e| e <= timeout) {
+        while start_time.elapsed() <= timeout {
             self.serial_port.read_until(b'\n', &mut rfe_message_buf)?;
 
             // The last two bytes of each message are \r and \n
@@ -410,13 +410,11 @@ impl TryFrom<Box<dyn SerialPort>> for RfExplorer {
 
         let (mut rfe_setup, mut rfe_config) = (None, None);
         let mut rfe_message_buf = Vec::new();
-        let start_time = SystemTime::now();
+        let start_time = Instant::now();
 
         // Only create an RfExplorer object if we receive a valid RfExplorerSetup and RfExplorerConfig within the timeout duration
         while (rfe_setup.is_none() || rfe_config.is_none())
-            && start_time
-                .elapsed()
-                .map_or(false, |e| e <= RfExplorer::CONNECTION_TIMEOUT)
+            && start_time.elapsed() <= RfExplorer::CONNECTION_TIMEOUT
         {
             serial_port.read_until(b'\n', &mut rfe_message_buf)?;
 
