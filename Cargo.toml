@@ -6,6 +6,7 @@ edition = "2018"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
+chrono = "0.4"
 num_enum = "0.5.1"
 serialport = "3.3.0"
 thiserror = "1.0.20"

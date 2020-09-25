@@ -1,9 +1,11 @@
+use chrono::{DateTime, Utc};
 use std::{cmp::Ordering, convert::TryFrom};
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
 pub struct RfExplorerSweep {
     amplitudes_dbm: Vec<f32>,
+    timestamp: DateTime<Utc>,
 }
 
 #[derive(Error, Debug)]
@@ -59,6 +61,7 @@ impl RfExplorerSweep {
         match amp_bytes.len().cmp(&expected_len) {
             Ordering::Equal => Ok(RfExplorerSweep {
                 amplitudes_dbm: amplitudes_from_bytes(amp_bytes),
+                timestamp: Utc::now(),
             }),
             Ordering::Less => Err(ParseSweepError::TooFewAmplitudes {
                 expected: expected_len,
