@@ -21,6 +21,7 @@ pub struct RfExplorer {
     serial_port: SerialPortReader,
     setup: RfExplorerSetup,
     config: RfExplorerConfig,
+    message_buf: Vec<u8>,
 }
 
 #[derive(Error, Debug)]
@@ -92,17 +93,17 @@ impl RfExplorer {
         // This will prevent us from reading a stale sweep
         self.serial_port.get_ref().clear(ClearBuffer::Input)?;
 
-        let mut rfe_message_buf = Vec::new();
+        self.message_buf.clear();
         let start_time = Instant::now();
 
         while start_time.elapsed() <= timeout {
-            self.serial_port.read_until(b'\n', &mut rfe_message_buf)?;
+            self.serial_port.read_until(b'\n', &mut self.message_buf)?;
 
             // It's possible that the byte '\n' could be used to represent an amplitude (-5 dBm)
             // This would result in an invalid sweep with fewer amplitudes than indicated by the length field
             // If parsing the bytes fails with ParseSweepError::TooFewAmplitudes, do not clear the message buffer
             // This will give us another chance to find the real end of the sweep because read_until() appends to the message buffer
-            if let Some(rfe_message) = rfe_message_buf.get(0..rfe_message_buf.len() - 2) {
+            if let Some(rfe_message) = self.message_buf.get(0..self.message_buf.len() - 2) {
                 match RfExplorerSweep::try_from(rfe_message) {
                     Ok(sweep) => return Ok(sweep),
                     Err(ParseSweepError::TooFewAmplitudes { .. }) => continue,
@@ -111,7 +112,7 @@ impl RfExplorer {
             }
 
             // The line we read was not a sweep, so clear the message buffer before reading the next line
-            rfe_message_buf.clear();
+            self.message_buf.clear();
         }
 
         Err(Error::ResponseTimedOut(timeout))
@@ -307,22 +308,22 @@ impl RfExplorer {
     where
         T: for<'a> TryFrom<&'a [u8]>,
     {
-        let mut rfe_message_buf = Vec::new();
+        self.message_buf.clear();
         let start_time = Instant::now();
 
         while start_time.elapsed() <= timeout {
-            self.serial_port.read_until(b'\n', &mut rfe_message_buf)?;
+            self.serial_port.read_until(b'\n', &mut self.message_buf)?;
 
             // The last two bytes of each message are \r and \n
             // Try to create the response from a slice of bytes without \r\n
-            if let Some(rfe_message) = rfe_message_buf.get(0..rfe_message_buf.len() - 2) {
+            if let Some(rfe_message) = self.message_buf.get(0..self.message_buf.len() - 2) {
                 if let Ok(response) = T::try_from(rfe_message) {
                     return Ok(response);
                 }
             }
 
             // The line we read was not the response, so clear the message buffer before reading the next line
-            rfe_message_buf.clear();
+            self.message_buf.clear();
         }
 
         Err(Error::ResponseTimedOut(timeout))
@@ -409,18 +410,18 @@ impl TryFrom<Box<dyn SerialPort>> for RfExplorer {
         serial_port.get_mut().write_all(&[b'#', 4, b'C', b'0'])?;
 
         let (mut rfe_setup, mut rfe_config) = (None, None);
-        let mut rfe_message_buf = Vec::new();
+        let mut message_buf = Vec::new();
         let start_time = Instant::now();
 
         // Only create an RfExplorer object if we receive a valid RfExplorerSetup and RfExplorerConfig within the timeout duration
         while (rfe_setup.is_none() || rfe_config.is_none())
             && start_time.elapsed() <= RfExplorer::CONNECTION_TIMEOUT
         {
-            serial_port.read_until(b'\n', &mut rfe_message_buf)?;
+            serial_port.read_until(b'\n', &mut message_buf)?;
 
             // The last two bytes of each message are \r and \n
             // Create an RfExplorerSetup or RfExplorerConfig from a slice of bytes without \r\n
-            if let Some(rfe_message) = rfe_message_buf.get(0..rfe_message_buf.len() - 2) {
+            if let Some(rfe_message) = message_buf.get(0..message_buf.len() - 2) {
                 if let Ok(setup) = RfExplorerSetup::try_from(rfe_message) {
                     rfe_setup = Some(setup);
                 } else if let Ok(config) = RfExplorerConfig::try_from(rfe_message) {
@@ -428,7 +429,7 @@ impl TryFrom<Box<dyn SerialPort>> for RfExplorer {
                 }
             }
 
-            rfe_message_buf.clear();
+            message_buf.clear();
         }
 
         if let (Some(setup), Some(config)) = (rfe_setup, rfe_config) {
@@ -436,6 +437,7 @@ impl TryFrom<Box<dyn SerialPort>> for RfExplorer {
                 serial_port,
                 setup,
                 config,
+                message_buf,
             })
         } else {
             Err(ConnectionError::ConnectionTimedOut(
