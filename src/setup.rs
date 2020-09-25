@@ -1,4 +1,4 @@
-use crate::RfExplorerModel;
+use num_enum::TryFromPrimitive;
 use std::{convert::TryFrom, str, str::FromStr};
 use thiserror::Error;
 
@@ -7,6 +7,23 @@ pub struct RfExplorerSetup {
     main_model: RfExplorerModel,
     expansion_model: Option<RfExplorerModel>,
     firmware_version: String,
+}
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
+#[repr(u8)]
+pub enum RfExplorerModel {
+    Rfe433 = 0,
+    Rfe868 = 1,
+    Rfe915 = 2,
+    RfeWSub1G = 3,
+    Rfe2400 = 4,
+    RfeWSub3G = 5,
+    Rfe6G = 6,
+    RfeWSub1GPlus = 10,
+    RfeAudioPro = 11,
+    Rfe2400Plus = 12,
+    Rfe4GPlus = 13,
+    Rfe6GPlus = 14,
 }
 
 #[derive(Error, Debug)]
