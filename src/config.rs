@@ -1,4 +1,5 @@
-use crate::{RfExplorerCalcMode, RfExplorerMode};
+use crate::RfExplorerCalcMode;
+use num_enum::TryFromPrimitive;
 use std::{convert::TryFrom, str, str::FromStr};
 use thiserror::Error;
 
@@ -17,6 +18,21 @@ pub struct RfExplorerConfig {
     rbw_khz: Option<f64>,
     amp_offset_db: Option<i16>,
     calculator_mode: Option<RfExplorerCalcMode>,
+}
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
+#[repr(u8)]
+pub enum RfExplorerMode {
+    SpectrumAnalyzer = 0,
+    RfGenerator = 1,
+    WifiAnalyzer = 2,
+    AnalyzerTracking = 5,
+    RfSniffer = 6,
+    CwTransmitter = 60,
+    SweepFrequency = 61,
+    SweepAmplitude = 62,
+    GeneratorTracking = 63,
+    Unknown = 255,
 }
 
 #[derive(Error, Debug)]

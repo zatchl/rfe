@@ -4,7 +4,7 @@ mod serial_number;
 mod setup;
 mod sweep;
 
-pub use config::{ParseConfigError, RfExplorerConfig};
+pub use config::{ParseConfigError, RfExplorerConfig, RfExplorerMode};
 pub use rf_explorer::RfExplorer;
 pub use serial_number::{ParseSerialNumberError, RfExplorerSerialNumber};
 pub use setup::{ParseSetupError, RfExplorerModel, RfExplorerSetup};
@@ -13,21 +13,6 @@ pub use sweep::{ParseSweepError, RfExplorerSweep};
 use num_enum::TryFromPrimitive;
 use serialport::{self, Error};
 use std::convert::TryFrom;
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
-#[repr(u8)]
-pub enum RfExplorerMode {
-    SpectrumAnalyzer = 0,
-    RfGenerator = 1,
-    WifiAnalyzer = 2,
-    AnalyzerTracking = 5,
-    RfSniffer = 6,
-    CwTransmitter = 60,
-    SweepFrequency = 61,
-    SweepAmplitude = 62,
-    GeneratorTracking = 63,
-    Unknown = 255,
-}
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
