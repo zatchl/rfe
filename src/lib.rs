@@ -4,7 +4,7 @@ mod serial_number;
 mod setup;
 mod sweep;
 
-pub use config::{ParseConfigError, RfExplorerConfig, RfExplorerMode};
+pub use config::{ParseConfigError, RfExplorerCalcMode, RfExplorerConfig, RfExplorerMode};
 pub use rf_explorer::RfExplorer;
 pub use serial_number::{ParseSerialNumberError, RfExplorerSerialNumber};
 pub use setup::{ParseSetupError, RfExplorerModel, RfExplorerSetup};
@@ -13,16 +13,6 @@ pub use sweep::{ParseSweepError, RfExplorerSweep};
 use num_enum::TryFromPrimitive;
 use serialport::{self, Error};
 use std::convert::TryFrom;
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
-#[repr(u8)]
-pub enum RfExplorerCalcMode {
-    Normal = 0,
-    Max,
-    Avg,
-    Overwrite,
-    MaxHold,
-}
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive)]
 #[repr(u8)]

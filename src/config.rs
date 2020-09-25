@@ -1,4 +1,3 @@
-use crate::RfExplorerCalcMode;
 use num_enum::TryFromPrimitive;
 use std::{convert::TryFrom, str, str::FromStr};
 use thiserror::Error;
@@ -33,6 +32,16 @@ pub enum RfExplorerMode {
     SweepAmplitude = 62,
     GeneratorTracking = 63,
     Unknown = 255,
+}
+
+#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
+#[repr(u8)]
+pub enum RfExplorerCalcMode {
+    Normal = 0,
+    Max,
+    Avg,
+    Overwrite,
+    MaxHold,
 }
 
 #[derive(Error, Debug)]
