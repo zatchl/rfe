@@ -1,46 +1,29 @@
-mod config;
+mod messages;
+mod model;
+#[macro_use]
 mod rf_explorer;
-mod serial_number;
-mod setup;
-mod sweep;
+mod signal_generator;
+mod spectrum_analyzer;
 
-pub use config::{ParseConfigError, RfExplorerCalcMode, RfExplorerConfig, RfExplorerMode};
-pub use rf_explorer::RfExplorer;
-pub use serial_number::{ParseSerialNumberError, RfExplorerSerialNumber};
-pub use setup::{ParseSetupError, RfExplorerModel, RfExplorerSetup};
-pub use sweep::{ParseSweepError, RfExplorerSweep};
+pub use messages::RfeMessage;
+pub use model::Model;
+pub use rf_explorer::{Error, Result, RfExplorer};
+pub use signal_generator::SignalGenerator;
+pub use spectrum_analyzer::SpectrumAnalyzer;
 
-use num_enum::TryFromPrimitive;
-use serialport::{self, Error};
+use serialport::{self, Error as SerialPortError};
 use std::convert::TryFrom;
 
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
-#[repr(u8)]
-pub enum RfExplorerWifiMode {
-    Disable = 0,
-    TwoPointFourGhz,
-    FiveGhz,
-}
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
-#[repr(u8)]
-pub enum RfExplorerDspMode {
-    Auto = b'0',
-    Filter = b'1',
-    Fast = b'2',
-}
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive)]
-#[repr(u8)]
-pub enum RfExplorerInputStage {
-    Bypass = b'0',
-    Attenuator30dB = b'1',
-    Lna25dB = b'2',
-}
-
-pub fn available_rf_explorers() -> Result<Vec<RfExplorer>, Error> {
+pub fn signal_generators() -> std::result::Result<Vec<SignalGenerator>, SerialPortError> {
     Ok(serialport::available_ports()?
         .iter()
-        .filter_map(|serial_port_info| RfExplorer::try_from(serial_port_info).ok())
+        .filter_map(|serial_port_info| SignalGenerator::try_from(serial_port_info).ok())
+        .collect())
+}
+
+pub fn spectrum_analyzers() -> std::result::Result<Vec<SpectrumAnalyzer>, SerialPortError> {
+    Ok(serialport::available_ports()?
+        .iter()
+        .filter_map(|serial_port_info| SpectrumAnalyzer::try_from(serial_port_info).ok())
         .collect())
 }
