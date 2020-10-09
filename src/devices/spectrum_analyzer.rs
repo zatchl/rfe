@@ -128,7 +128,7 @@ impl SpectrumAnalyzer {
         self.write_command(&[b'C', b'W', wifi_mode.into()])
     }
 
-    pub fn set_calc_mode(&mut self, calc_mode: RfExplorerCalcMode) -> Result<()> {
+    pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> Result<()> {
         self.write_command(&[b'C', b'+', calc_mode.into()])
     }
 

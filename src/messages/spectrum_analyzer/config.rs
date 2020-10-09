@@ -22,7 +22,7 @@ pub struct Config {
     #[optional]
     amp_offset_db: Option<i16>,
     #[optional]
-    calculator_mode: Option<RfExplorerCalcMode>,
+    calculator_mode: Option<CalcMode>,
 }
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
@@ -49,7 +49,7 @@ pub enum RfExplorerMode {
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq)]
 #[repr(u8)]
-pub enum RfExplorerCalcMode {
+pub enum CalcMode {
     Normal = 0,
     Max,
     Avg,
@@ -110,7 +110,7 @@ impl Config {
         self.amp_offset_db
     }
 
-    pub fn calculator_mode(&self) -> Option<RfExplorerCalcMode> {
+    pub fn calculator_mode(&self) -> Option<CalcMode> {
         self.calculator_mode
     }
 }
@@ -131,7 +131,7 @@ impl FromStr for RfExplorerMode {
     }
 }
 
-impl FromStr for RfExplorerCalcMode {
+impl FromStr for CalcMode {
     type Err = ParseMessageError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -160,7 +160,7 @@ mod tests {
         assert_eq!(config.max_span_khz(), 600_000f64);
         assert_eq!(config.rbw_khz(), Some(200f64));
         assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calculator_mode(), Some(RfExplorerCalcMode::Normal));
+        assert_eq!(config.calculator_mode(), Some(CalcMode::Normal));
     }
 
     #[test]
@@ -180,7 +180,7 @@ mod tests {
         assert_eq!(config.max_span_khz(), 959950f64);
         assert_eq!(config.rbw_khz(), Some(110f64));
         assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calculator_mode(), Some(RfExplorerCalcMode::Normal));
+        assert_eq!(config.calculator_mode(), Some(CalcMode::Normal));
     }
 
     #[test]
