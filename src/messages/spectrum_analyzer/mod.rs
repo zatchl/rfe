@@ -5,7 +5,7 @@ pub mod sweep;
 pub mod tracking_status;
 
 pub use config::Config;
-pub use dsp_mode::DspModeMessage;
+pub use dsp_mode::DspMode;
 pub use setup::Setup;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatusMessage;

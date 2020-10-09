@@ -1,5 +1,7 @@
 use crate::messages::spectrum_analyzer::*;
-use crate::messages::spectrum_analyzer::{dsp_mode::DspMode, config::CalcMode, sweep::ParseSweepError};
+use crate::messages::spectrum_analyzer::{
+    config::CalcMode, dsp_mode::DspMode, sweep::ParseSweepError,
+};
 use crate::{devices::rf_explorer::SerialPortReader, Error, Result, RfExplorer};
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
@@ -149,7 +151,7 @@ impl SpectrumAnalyzer {
         todo!()
     }
 
-    pub fn set_dsp(&mut self, dsp_mode: DspMode) -> Result<DspModeMessage> {
+    pub fn set_dsp(&mut self, dsp_mode: DspMode) -> Result<DspMode> {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(&[b'C', b'p', dsp_mode.into()])?;
 
