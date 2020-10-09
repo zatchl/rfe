@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Zach Leytus <zach.leytus@pm.me>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
+readme = "README.md"
 
 [dependencies]
 chrono = "0.4"
