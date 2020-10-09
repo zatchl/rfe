@@ -8,4 +8,4 @@ pub use config::Config;
 pub use dsp_mode::DspMode;
 pub use setup::Setup;
 pub use sweep::Sweep;
-pub use tracking_status::TrackingStatusMessage;
+pub use tracking_status::TrackingStatus;

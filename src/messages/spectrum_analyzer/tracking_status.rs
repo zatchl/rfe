@@ -1,13 +1,6 @@
-use crate::messages::ParseMessageError;
+use crate::messages::{ParseMessageError, RfeMessage};
 use num_enum::TryFromPrimitive;
-use rfe_message::RfeMessage;
-use std::{convert::TryFrom, str::FromStr};
-
-#[derive(Debug, Copy, Clone, RfeMessage)]
-#[prefix = "#K"]
-pub struct TrackingStatusMessage {
-    tracking_status: TrackingStatus,
-}
+use std::convert::TryFrom;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
@@ -16,37 +9,32 @@ pub enum TrackingStatus {
     Enabled,
 }
 
-impl TrackingStatusMessage {
-    pub fn tracking_status(&self) -> TrackingStatus {
-        self.tracking_status
-    }
+impl RfeMessage for TrackingStatus {
+    const PREFIX: &'static [u8] = b"#K";
 }
 
-impl FromStr for TrackingStatus {
-    type Err = ParseMessageError;
+impl TryFrom<&[u8]> for TrackingStatus {
+    type Error = ParseMessageError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(
-            *s.as_bytes()
-                .get(0)
-                .ok_or_else(|| ParseMessageError::InvalidData)?,
-        )
-        .map_err(|_| ParseMessageError::InvalidData)
+    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+        if let [b'#', b'K', tracking_byte] = bytes {
+            TrackingStatus::try_from(*tracking_byte).map_err(|_| ParseMessageError::InvalidData)
+        } else if let [tracking_byte] = bytes {
+            TrackingStatus::try_from(*tracking_byte).map_err(|_| ParseMessageError::InvalidData)
+        } else {
+            Err(ParseMessageError::InvalidData)
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::convert::TryFrom;
 
     #[test]
     fn accept_valid_tracking_status_message() {
         let bytes = [b'#', b'K', 0];
-        let tracking_status_message = TrackingStatusMessage::try_from(bytes.as_ref()).unwrap();
-        assert_eq!(
-            tracking_status_message.tracking_status(),
-            TrackingStatus::Disabled
-        );
+        let tracking_status = TrackingStatus::try_from(bytes.as_ref()).unwrap();
+        assert_eq!(tracking_status, TrackingStatus::Disabled);
     }
 }

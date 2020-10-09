@@ -139,7 +139,7 @@ impl SpectrumAnalyzer {
         &mut self,
         start_freq_khz: f64,
         freq_step_khz: f64,
-    ) -> Result<TrackingStatusMessage> {
+    ) -> Result<TrackingStatus> {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         let command = format!("C3-K:{:07.0},{:07.0}", start_freq_khz, freq_step_khz);
         self.write_command(command.as_bytes())?;
