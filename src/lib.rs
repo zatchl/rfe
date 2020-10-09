@@ -1,15 +1,12 @@
+mod devices;
 mod messages;
 mod model;
-#[macro_use]
-mod rf_explorer;
-mod signal_generator;
-mod spectrum_analyzer;
 
+pub use devices::rf_explorer::{ConnectionError, Error, Result, RfExplorer};
+pub use devices::signal_generator::SignalGenerator;
+pub use devices::spectrum_analyzer::SpectrumAnalyzer;
 pub use messages::RfeMessage;
 pub use model::Model;
-pub use rf_explorer::{Error, Result, RfExplorer};
-pub use signal_generator::SignalGenerator;
-pub use spectrum_analyzer::SpectrumAnalyzer;
 
 use serialport;
 use std::convert::TryFrom;

@@ -1,5 +1,5 @@
 use crate::messages::spectrum_analyzer::*;
-use crate::{rf_explorer::SerialPortReader, Error, Result, RfExplorer};
+use crate::{devices::rf_explorer::SerialPortReader, Error, Result, RfExplorer};
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
 use std::{

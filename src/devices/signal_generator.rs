@@ -1,5 +1,5 @@
 use crate::messages::signal_generator::*;
-use crate::{rf_explorer::SerialPortReader, Result, RfExplorer};
+use crate::{devices::rf_explorer::SerialPortReader, Result, RfExplorer};
 use std::fmt::Debug;
 
 pub struct SignalGenerator {
