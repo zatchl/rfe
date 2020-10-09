@@ -34,11 +34,11 @@ impl SpectrumAnalyzer {
     const DEFAULT_NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
     const DEFAULT_REQUEST_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
 
-    pub fn next_sweep(&mut self) -> Result<RfExplorerSweep> {
+    pub fn next_sweep(&mut self) -> Result<Sweep> {
         self.next_sweep_with_timeout(SpectrumAnalyzer::DEFAULT_NEXT_SWEEP_TIMEOUT)
     }
 
-    pub fn next_sweep_with_timeout(&mut self, timeout: Duration) -> Result<RfExplorerSweep> {
+    pub fn next_sweep_with_timeout(&mut self, timeout: Duration) -> Result<Sweep> {
         // Before reading the next sweep, we should clear the serial port's input buffer
         // This will prevent us from reading a stale sweep
         self.reader.get_ref().clear(ClearBuffer::Input)?;
@@ -54,7 +54,7 @@ impl SpectrumAnalyzer {
             // If parsing the bytes fails with ParseSweepError::TooFewAmplitudes, do not clear the message buffer
             // This will give us another chance to find the real end of the sweep because read_until() appends to the message buffer
             if let Some(rfe_message) = self.message_buf.get(0..self.message_buf.len() - 2) {
-                match RfExplorerSweep::try_from(rfe_message) {
+                match Sweep::try_from(rfe_message) {
                     Ok(sweep) => return Ok(sweep),
                     Err(ParseSweepError::TooFewAmplitudes { .. }) => continue,
                     Err(_) => (),

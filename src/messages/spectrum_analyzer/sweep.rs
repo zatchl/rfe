@@ -3,7 +3,7 @@ use std::{cmp::Ordering, convert::TryFrom};
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
-pub struct RfExplorerSweep {
+pub struct Sweep {
     amplitudes_dbm: Vec<f32>,
     timestamp: DateTime<Utc>,
 }
@@ -55,11 +55,11 @@ fn parse_sweep_data_large_len(bytes: &[u8]) -> Result<usize> {
     ])))
 }
 
-impl RfExplorerSweep {
-    fn new(amp_bytes: Option<&[u8]>, expected_len: usize) -> Result<RfExplorerSweep> {
+impl Sweep {
+    fn new(amp_bytes: Option<&[u8]>, expected_len: usize) -> Result<Sweep> {
         let amp_bytes = amp_bytes.ok_or_else(|| ParseSweepError::InvalidFormatError)?;
         match amp_bytes.len().cmp(&expected_len) {
-            Ordering::Equal => Ok(RfExplorerSweep {
+            Ordering::Equal => Ok(Sweep {
                 amplitudes_dbm: amplitudes_from_bytes(amp_bytes),
                 timestamp: Utc::now(),
             }),
@@ -79,14 +79,14 @@ impl RfExplorerSweep {
     }
 }
 
-impl TryFrom<&[u8]> for RfExplorerSweep {
+impl TryFrom<&[u8]> for Sweep {
     type Error = ParseSweepError;
 
     fn try_from(bytes: &[u8]) -> Result<Self> {
         match bytes.get(0..2) {
-            Some(b"$S") => RfExplorerSweep::new(bytes.get(3..), parse_sweep_data_len(bytes)?),
-            Some(b"$s") => RfExplorerSweep::new(bytes.get(3..), parse_sweep_data_ext_len(bytes)?),
-            Some(b"$z") => RfExplorerSweep::new(bytes.get(4..), parse_sweep_data_large_len(bytes)?),
+            Some(b"$S") => Sweep::new(bytes.get(3..), parse_sweep_data_len(bytes)?),
+            Some(b"$s") => Sweep::new(bytes.get(3..), parse_sweep_data_ext_len(bytes)?),
+            Some(b"$z") => Sweep::new(bytes.get(4..), parse_sweep_data_large_len(bytes)?),
             _ => Err(ParseSweepError::InvalidFormatError),
         }
     }

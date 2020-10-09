@@ -10,5 +10,5 @@ pub use config::Config;
 pub use config::Mode;
 pub use dsp_mode::{DspMode, DspModeMessage};
 pub use setup::Setup;
-pub use sweep::{ParseSweepError, RfExplorerSweep};
+pub use sweep::{ParseSweepError, Sweep};
 pub use tracking_status::{TrackingStatus, TrackingStatusMessage};
