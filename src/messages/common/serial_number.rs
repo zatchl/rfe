@@ -2,12 +2,12 @@ use rfe_message::RfeMessage;
 
 #[derive(Debug, Clone, Eq, PartialEq, RfeMessage)]
 #[prefix = "#Sn"]
-pub struct SerialNumberMessage {
+pub struct SerialNumber {
     serial_number: String,
 }
 
-impl SerialNumberMessage {
-    pub fn serial_number(&self) -> &str {
+impl SerialNumber {
+    pub fn as_str(&self) -> &str {
         &self.serial_number
     }
 }
@@ -19,11 +19,11 @@ mod tests {
 
     #[test]
     fn reject_with_invalid_prefix() {
-        assert!(SerialNumberMessage::try_from(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
+        assert!(SerialNumber::try_from(b"$Sn0SME38SI2X7NGR48".as_ref()).is_err());
     }
 
     #[test]
     fn accept_valid_serial_number() {
-        assert!(SerialNumberMessage::try_from(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok())
+        assert!(SerialNumber::try_from(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok())
     }
 }

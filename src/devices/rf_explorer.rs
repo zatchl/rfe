@@ -1,4 +1,4 @@
-use crate::messages::common::SerialNumberMessage;
+use crate::messages::common::SerialNumber;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortSettings,
     StopBits,
@@ -92,16 +92,13 @@ pub trait RfExplorer: for<'a> TryFrom<&'a SerialPortInfo> {
         self.write_command(b"D0")
     }
 
-    fn request_serial_number(&mut self) -> Result<SerialNumberMessage> {
+    fn request_serial_number(&mut self) -> Result<SerialNumber> {
         self.request_serial_number_with_timeout(
             <Self as RfExplorer>::DEFAULT_REQUEST_SERIAL_NUMBER_TIMEOUT,
         )
     }
 
-    fn request_serial_number_with_timeout(
-        &mut self,
-        timeout: Duration,
-    ) -> Result<SerialNumberMessage> {
+    fn request_serial_number_with_timeout(&mut self, timeout: Duration) -> Result<SerialNumber> {
         self.reader().get_ref().clear(ClearBuffer::Input)?;
         self.write_command(b"Cn")?;
         self.wait_for_response(timeout)

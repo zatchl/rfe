@@ -1,4 +1,4 @@
 mod screen_data;
 mod serial_number;
 
-pub use serial_number::SerialNumberMessage;
+pub use serial_number::SerialNumber;
