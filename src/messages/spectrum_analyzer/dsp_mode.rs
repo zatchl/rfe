@@ -31,7 +31,6 @@ impl TryFrom<&[u8]> for DspMode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::convert::TryFrom;
 
     #[test]
     fn accept_valid_dsp_mode_message() {
