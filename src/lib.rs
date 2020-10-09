@@ -1,5 +1,5 @@
-mod devices;
-mod messages;
+pub mod devices;
+pub mod messages;
 mod model;
 
 pub use devices::rf_explorer::{ConnectionError, Error, Result, RfExplorer};
