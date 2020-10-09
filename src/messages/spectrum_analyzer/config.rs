@@ -12,7 +12,7 @@ pub struct Config {
     amp_top_dbm: i16,
     amp_bottom_dbm: i16,
     sweep_points: u32,
-    active_module: RfExplorerActiveModule,
+    active_module: ActiveModule,
     mode: Mode,
     min_freq_khz: f64,
     max_freq_khz: f64,
@@ -27,7 +27,7 @@ pub struct Config {
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
-pub enum RfExplorerActiveModule {
+pub enum ActiveModule {
     Main = 0,
     Expansion,
 }
@@ -82,7 +82,7 @@ impl Config {
         self.sweep_points
     }
 
-    pub fn active_module(&self) -> RfExplorerActiveModule {
+    pub fn active_module(&self) -> ActiveModule {
         self.active_module
     }
 
@@ -115,7 +115,7 @@ impl Config {
     }
 }
 
-impl FromStr for RfExplorerActiveModule {
+impl FromStr for ActiveModule {
     type Err = ParseMessageError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -153,7 +153,7 @@ mod tests {
         assert_eq!(config.amp_top_dbm(), -30);
         assert_eq!(config.amp_bottom_dbm(), -118);
         assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_module(), RfExplorerActiveModule::Main);
+        assert_eq!(config.active_module(), ActiveModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq_khz(), 4_850_000f64);
         assert_eq!(config.max_freq_khz(), 6_100_000f64);
@@ -173,7 +173,7 @@ mod tests {
         assert_eq!(config.amp_top_dbm(), -10);
         assert_eq!(config.amp_bottom_dbm(), -120);
         assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_module(), RfExplorerActiveModule::Main);
+        assert_eq!(config.active_module(), ActiveModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq_khz(), 50f64);
         assert_eq!(config.max_freq_khz(), 960000f64);
