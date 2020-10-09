@@ -5,7 +5,6 @@ mod model;
 pub use devices::rf_explorer::{ConnectionError, Error, Result, RfExplorer};
 pub use devices::signal_generator::SignalGenerator;
 pub use devices::spectrum_analyzer::SpectrumAnalyzer;
-pub use messages::RfeMessage;
 pub use model::Model;
 
 use serialport;
