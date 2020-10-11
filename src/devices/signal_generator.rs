@@ -85,8 +85,16 @@ impl SignalGenerator {
         power_level: PowerLevel,
         sweep_steps: u16,
         freq_step_khz: f64,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C3-T:{:07.0},{},{},{:04},{:07.0}",
+            start_freq_khz,
+            u8::from(attenuation),
+            u8::from(power_level),
+            sweep_steps,
+            freq_step_khz
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_tracking_exp(
