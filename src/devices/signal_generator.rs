@@ -1,5 +1,6 @@
 use crate::devices::{Result, RfExplorer, SerialPortReader};
 use crate::messages::signal_generator::*;
+use num_enum::IntoPrimitive;
 use std::fmt::Debug;
 
 pub struct SignalGenerator {
@@ -9,14 +10,14 @@ pub struct SignalGenerator {
     message_buf: Vec<u8>,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, IntoPrimitive)]
 #[repr(u8)]
 pub enum Attenuation {
     On = b'0',
     Off = b'1',
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, IntoPrimitive)]
 #[repr(u8)]
 pub enum PowerLevel {
     Lowest = b'0',
@@ -31,8 +32,14 @@ impl SignalGenerator {
         cw_freq_khz: f64,
         attenuation: Attenuation,
         power_level: PowerLevel,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C3-F:{:07.0},{},{}",
+            cw_freq_khz,
+            u8::from(attenuation),
+            u8::from(power_level)
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn enable_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) {
