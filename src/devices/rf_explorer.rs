@@ -1,4 +1,5 @@
 use crate::messages::common::SerialNumber;
+use num_enum::IntoPrimitive;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortSettings,
     StopBits,
@@ -72,8 +73,9 @@ pub trait RfExplorer: for<'a> TryFrom<&'a SerialPortInfo> {
         self.write_command(b"r")
     }
 
-    fn change_baudrate(&mut self) -> Result<()> {
-        todo!()
+    fn set_baud_rate(&mut self, baud_rate: BaudRate) -> Result<()> {
+        self.write_command(&[b'c', baud_rate.into()])?;
+        Ok(self.reader().get_mut().set_baud_rate(baud_rate.bps())?)
     }
 
     fn enable_lcd(&mut self) -> Result<()> {
@@ -102,6 +104,36 @@ pub trait RfExplorer: for<'a> TryFrom<&'a SerialPortInfo> {
         self.reader().get_ref().clear(ClearBuffer::Input)?;
         self.write_command(b"Cn")?;
         self.wait_for_response(timeout)
+    }
+}
+
+#[derive(Debug, Copy, Clone, IntoPrimitive)]
+#[repr(u8)]
+pub enum BaudRate {
+    _500000bps = b'0',
+    _1200bps = b'1',
+    _2400bps = b'2',
+    _4800bps = b'3',
+    _9600bps = b'4',
+    _19200bps = b'5',
+    _38400bps = b'6',
+    _57600bps = b'7',
+    _115200bps = b'8',
+}
+
+impl BaudRate {
+    pub fn bps(&self) -> u32 {
+        match self {
+            BaudRate::_500000bps => 500_000,
+            BaudRate::_1200bps => 1_200,
+            BaudRate::_2400bps => 2_400,
+            BaudRate::_4800bps => 4_800,
+            BaudRate::_9600bps => 9_600,
+            BaudRate::_19200bps => 19_200,
+            BaudRate::_38400bps => 38_400,
+            BaudRate::_57600bps => 57_600,
+            BaudRate::_115200bps => 115_200,
+        }
     }
 }
 
