@@ -1,17 +1,18 @@
-use crate::messages::RfeMessage;
-use std::convert::TryFrom;
+use crate::messages::{ParseMessageError, RfeMessage};
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
 pub struct ScreenData {
-    data: [[u8; 128]; 8],
+    screen_data_matrix: [[u8; ScreenData::COLUMNS]; ScreenData::ROWS],
 }
 
 impl ScreenData {
-    const WIDTH_PX: u8 = 128;
-    const HEIGHT_PX: u8 = 64;
+    pub const ROWS: usize = 8;
+    pub const COLUMNS: usize = 128;
+    pub const VERTICAL_PX_PER_ROW: usize = 8;
 
-    pub fn data(&self) -> &[[u8; 128]; 8] {
-        &self.data
+    pub fn as_byte_matrix(&self) -> &[[u8; ScreenData::COLUMNS]; ScreenData::ROWS] {
+        &self.screen_data_matrix
     }
 }
 
@@ -20,23 +21,28 @@ impl RfeMessage for ScreenData {
 }
 
 impl TryFrom<&[u8]> for ScreenData {
-    type Error = ();
+    type Error = ParseMessageError;
 
     fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
         if bytes.starts_with(Self::PREFIX) {
-            let screen_data_bytes = bytes.get(2..(128 * 8) + 2).ok_or_else(|| ())?;
-            let data = {
-                let mut data = [[0; 128]; 8];
-                for (row_index, row_bytes) in screen_data_bytes.chunks_exact(128).enumerate() {
-                    for column_index in 0..data[row_index].len() {
-                        data[row_index][column_index] = row_bytes[column_index];
-                    }
+            let screen_data_array: &[u8; ScreenData::ROWS * ScreenData::COLUMNS] = bytes
+                .get(ScreenData::PREFIX.len()..)
+                .ok_or_else(|| ParseMessageError::InvalidData)?
+                .try_into()
+                .map_err(|_| ParseMessageError::InvalidData)?;
+            let screen_data_matrix = {
+                let mut matrix = [[0; ScreenData::COLUMNS]; ScreenData::ROWS];
+                for (row_index, row_bytes) in screen_data_array
+                    .chunks_exact(ScreenData::COLUMNS)
+                    .enumerate()
+                {
+                    matrix[row_index].clone_from_slice(row_bytes);
                 }
-                data
+                matrix
             };
-            Ok(ScreenData { data })
+            Ok(ScreenData { screen_data_matrix })
         } else {
-            Err(())
+            Err(ParseMessageError::InvalidData)
         }
     }
 }
