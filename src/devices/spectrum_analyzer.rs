@@ -1,8 +1,8 @@
+use crate::devices::{Error, Result, RfExplorer, SerialPortReader};
 use crate::messages::spectrum_analyzer::*;
 use crate::messages::spectrum_analyzer::{
     config::CalcMode, dsp_mode::DspMode, sweep::ParseSweepError,
 };
-use crate::{devices::rf_explorer::SerialPortReader, Error, Result, RfExplorer};
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
 use std::{

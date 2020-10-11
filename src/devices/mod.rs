@@ -1,6 +1,9 @@
 #[macro_use]
-pub(crate) mod rf_explorer;
-pub(crate) mod signal_generator;
-pub(crate) mod spectrum_analyzer;
+mod rf_explorer;
+mod signal_generator;
+mod spectrum_analyzer;
 
-pub use rf_explorer::BaudRate;
+pub(crate) use rf_explorer::SerialPortReader;
+pub use rf_explorer::{BaudRate, ConnectionError, Error, Result, RfExplorer};
+pub use signal_generator::SignalGenerator;
+pub use spectrum_analyzer::SpectrumAnalyzer;

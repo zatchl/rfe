@@ -2,9 +2,7 @@ pub mod devices;
 pub mod messages;
 mod model;
 
-pub use devices::rf_explorer::{ConnectionError, Error, Result, RfExplorer};
-pub use devices::signal_generator::SignalGenerator;
-pub use devices::spectrum_analyzer::SpectrumAnalyzer;
+pub use devices::{ConnectionError, Error, Result, RfExplorer, SignalGenerator, SpectrumAnalyzer};
 pub use model::Model;
 
 use serialport;
