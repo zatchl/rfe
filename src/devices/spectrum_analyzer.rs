@@ -170,12 +170,9 @@ impl SpectrumAnalyzer {
         if sweep_points <= 4096 {
             self.write_command(&[b'C', b'J', ((sweep_points / 16) - 1) as u8])
         } else {
-            todo!()
+            let sweep_points_bytes = sweep_points.to_be_bytes();
+            self.write_command(&[b'C', b'j', sweep_points_bytes[0], sweep_points_bytes[1]])
         }
-    }
-
-    pub fn set_sweep_points_large(&mut self, sweep_points: u16) -> Result<()> {
-        todo!()
     }
 
     fn validate_freq_range(&self, freq_range_khz: RangeInclusive<f64>) -> Result<()> {
