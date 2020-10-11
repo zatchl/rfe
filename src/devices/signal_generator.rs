@@ -54,8 +54,17 @@ impl SignalGenerator {
         sweep_steps: u16,
         freq_step_khz: f64,
         step_delay_ms: u32,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C3-F:{:07.0},{},{},{:04},{:07.0},{:05}",
+            start_freq_khz,
+            u8::from(attenuation),
+            u8::from(power_level),
+            sweep_steps,
+            freq_step_khz,
+            step_delay_ms
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_freq_sweep_exp(
