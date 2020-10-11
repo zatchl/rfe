@@ -147,8 +147,9 @@ impl SignalGenerator {
         self.write_command(b"CP0")
     }
 
-    pub fn set_tracking_steps(&mut self, tracking_steps: u16) {
-        todo!()
+    pub fn set_tracking_steps(&mut self, tracking_steps: u16) -> Result<()> {
+        let step_bytes = tracking_steps.to_be_bytes();
+        self.write_command(&[b'k', step_bytes[0], step_bytes[1]])
     }
 }
 
