@@ -110,11 +110,22 @@ impl SignalGenerator {
     pub fn start_amp_sweep(
         &mut self,
         cw_freq_khz: f64,
-        attenuation: Attenuation,
-        power_level: PowerLevel,
+        start_attenuation: Attenuation,
+        start_power_level: PowerLevel,
+        end_attenuation: Attenuation,
+        end_power: PowerLevel,
         step_delay_ms: u32,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C3-A:{:07.0},{},{},{},{},{:05}",
+            cw_freq_khz,
+            u8::from(start_attenuation),
+            u8::from(start_power_level),
+            u8::from(end_attenuation),
+            u8::from(end_power),
+            step_delay_ms
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_amp_sweep_exp(
