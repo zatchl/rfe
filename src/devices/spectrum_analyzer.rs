@@ -148,7 +148,8 @@ impl SpectrumAnalyzer {
     }
 
     pub fn tracking_step(&mut self, step: u16) -> Result<()> {
-        todo!()
+        let step_bytes = step.to_be_bytes();
+        self.write_command(&[b'k', step_bytes[0], step_bytes[1]])
     }
 
     pub fn set_dsp(&mut self, dsp_mode: DspMode) -> Result<DspMode> {
