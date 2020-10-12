@@ -8,6 +8,7 @@ pub use model::Model;
 use serialport;
 use std::convert::TryFrom;
 
+/// Returns every RF Explorer signal generator connected to the machine.
 pub fn signal_generators() -> Vec<SignalGenerator> {
     serialport::available_ports()
         .unwrap_or_default()
@@ -16,6 +17,7 @@ pub fn signal_generators() -> Vec<SignalGenerator> {
         .collect()
 }
 
+/// Returns every RF Explorer spectrum analyzer connected to the machine.
 pub fn spectrum_analyzers() -> Vec<SpectrumAnalyzer> {
     serialport::available_ports()
         .unwrap_or_default()
