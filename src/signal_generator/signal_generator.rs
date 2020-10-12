@@ -1,5 +1,5 @@
-use crate::devices::{Result, RfExplorer, SerialPortReader};
-use crate::messages::signal_generator::*;
+use crate::rf_explorer::{Result, RfExplorer, SerialPortReader};
+use crate::spectrum_analyzer::{Config, Setup};
 use num_enum::IntoPrimitive;
 use std::fmt::Debug;
 

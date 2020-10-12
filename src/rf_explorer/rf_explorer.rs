@@ -1,4 +1,4 @@
-use crate::messages::common::SerialNumber;
+use crate::rf_explorer::SerialNumber;
 use num_enum::IntoPrimitive;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortSettings,
@@ -137,7 +137,7 @@ impl BaudRate {
     }
 }
 
-pub(crate) type SerialPortReader = BufReader<Box<dyn SerialPort>>;
+pub type SerialPortReader = BufReader<Box<dyn SerialPort>>;
 
 const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
 
@@ -219,11 +219,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 macro_rules! impl_rf_explorer {
     ($type:ty, $setup:ty, $config:ty) => {
-        impl RfExplorer for $type {
+        impl crate::rf_explorer::RfExplorer for $type {
             type Setup = $setup;
             type Config = $config;
 
-            fn reader(&mut self) -> &mut crate::devices::rf_explorer::SerialPortReader {
+            fn reader(&mut self) -> &mut crate::rf_explorer::SerialPortReader {
                 &mut self.reader
             }
 
@@ -235,7 +235,10 @@ macro_rules! impl_rf_explorer {
                 self.config
             }
 
-            fn wait_for_response<T>(&mut self, timeout: std::time::Duration) -> crate::Result<T>
+            fn wait_for_response<T>(
+                &mut self,
+                timeout: std::time::Duration,
+            ) -> crate::rf_explorer::Result<T>
             where
                 T: for<'a> std::convert::TryFrom<&'a [u8]>,
             {
@@ -257,12 +260,12 @@ macro_rules! impl_rf_explorer {
                     self.message_buf.clear();
                 }
 
-                Err(crate::Error::ResponseTimedOut(timeout))
+                Err(crate::rf_explorer::Error::ResponseTimedOut(timeout))
             }
         }
 
         impl std::convert::TryFrom<&serialport::SerialPortInfo> for $type {
-            type Error = crate::ConnectionError;
+            type Error = crate::rf_explorer::ConnectionError;
 
             fn try_from(
                 serial_port_info: &serialport::SerialPortInfo,
@@ -279,7 +282,7 @@ macro_rules! impl_rf_explorer {
                             &<Self as crate::RfExplorer>::SERIAL_PORT_SETTIGNS,
                         )?;
                         let (setup, config) =
-                            crate::devices::rf_explorer::try_read_setup_and_config(
+                            crate::rf_explorer::rf_explorer::try_read_setup_and_config(
                                 &mut serial_port,
                             )?;
                         Ok(Self {
@@ -289,7 +292,7 @@ macro_rules! impl_rf_explorer {
                             message_buf: Vec::new(),
                         })
                     }
-                    _ => Err(crate::devices::rf_explorer::ConnectionError::NotAnRfExplorer),
+                    _ => Err(crate::rf_explorer::ConnectionError::NotAnRfExplorer),
                 }
             }
         }

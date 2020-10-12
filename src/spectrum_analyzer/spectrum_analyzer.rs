@@ -1,7 +1,6 @@
-use crate::devices::{Error, Result, RfExplorer, SerialPortReader};
-use crate::messages::spectrum_analyzer::*;
-use crate::messages::spectrum_analyzer::{
-    config::CalcMode, dsp_mode::DspMode, sweep::ParseSweepError,
+use crate::rf_explorer::{Error, Result, RfExplorer, SerialPortReader};
+use crate::spectrum_analyzer::{
+    CalcMode, Config, DspMode, ParseSweepError, Setup, Sweep, TrackingStatus,
 };
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;

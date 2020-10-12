@@ -1,4 +1,4 @@
-use crate::messages::ParseMessageError;
+use crate::rf_explorer::ParseMessageError;
 use num_enum::TryFromPrimitive;
 use rfe_message::RfeMessage;
 use std::{convert::TryFrom, str::FromStr};

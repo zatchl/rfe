@@ -39,32 +39,32 @@ pub fn derive_rfe_message(input: TokenStream) -> TokenStream {
         .expect("Missing 'prefix' attribute");
 
     (quote! {
-        fn parse_field<T>(field: Option<&[u8]>) -> Result<T, crate::messages::ParseMessageError>
+        fn parse_field<T>(field: Option<&[u8]>) -> Result<T, crate::rf_explorer::ParseMessageError>
         where
             T: std::str::FromStr,
-            crate::messages::ParseMessageError: From<T::Err>,
+            crate::rf_explorer::ParseMessageError: From<T::Err>,
         {
             Ok(T::from_str(
-                std::str::from_utf8(field.ok_or_else(|| crate::messages::ParseMessageError::MissingField)?)?.trim(),
+                std::str::from_utf8(field.ok_or_else(|| crate::rf_explorer::ParseMessageError::MissingField)?)?.trim(),
             )?)
         }
 
         impl std::convert::TryFrom<&[u8]> for #struct_name {
-            type Error = crate::messages::ParseMessageError;
+            type Error = crate::rf_explorer::ParseMessageError;
 
             fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
                 if bytes.starts_with(#message_prefix) {
-                    let mut fields = bytes.get(#message_prefix.len()..).ok_or_else(|| crate::messages::ParseMessageError::MissingField)?.split(|&byte| byte == b',');
+                    let mut fields = bytes.get(#message_prefix.len()..).ok_or_else(|| crate::rf_explorer::ParseMessageError::MissingField)?.split(|&byte| byte == b',');
                     Ok(#struct_name {
                         #(#parsed_fields),*
                     })
                 } else {
-                    Err(crate::messages::ParseMessageError::InvalidData)
+                    Err(crate::rf_explorer::ParseMessageError::InvalidData)
                 }
             }
         }
 
-        impl crate::messages::RfeMessage for #struct_name {
+        impl crate::rf_explorer::RfeMessage for #struct_name {
             const PREFIX: &'static [u8] = #message_prefix;
         }
     })
