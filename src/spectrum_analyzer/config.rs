@@ -1,10 +1,10 @@
 use crate::rf_explorer::ParseMessageError;
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use rfe_message::RfeMessage;
+use rfe_message::Message;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone, RfeMessage)]
+#[derive(Debug, Copy, Clone, Message)]
 #[prefix = "#C2-F:"]
 pub struct Config {
     start_freq_khz: f64,

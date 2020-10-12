@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, Lit, LitByteStr, Meta};
 
-#[proc_macro_derive(RfeMessage, attributes(prefix, optional))]
+#[proc_macro_derive(Message, attributes(prefix, optional))]
 pub fn derive_rfe_message(input: TokenStream) -> TokenStream {
     let derive_input = parse_macro_input!(input as DeriveInput);
     let struct_name = &derive_input.ident;
@@ -64,7 +64,7 @@ pub fn derive_rfe_message(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl crate::rf_explorer::RfeMessage for #struct_name {
+        impl crate::rf_explorer::Message for #struct_name {
             const PREFIX: &'static [u8] = #message_prefix;
         }
     })

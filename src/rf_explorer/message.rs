@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use thiserror::Error;
 
-pub trait RfeMessage: for<'a> TryFrom<&'a [u8]> {
+pub trait Message: for<'a> TryFrom<&'a [u8]> {
     const PREFIX: &'static [u8];
 }
 

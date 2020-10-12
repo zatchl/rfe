@@ -1,4 +1,4 @@
-use crate::rf_explorer::{ParseMessageError, RfeMessage};
+use crate::rf_explorer::{Message, ParseMessageError};
 use num_enum::TryFromPrimitive;
 use std::convert::TryFrom;
 
@@ -9,7 +9,7 @@ pub enum TrackingStatus {
     Enabled,
 }
 
-impl RfeMessage for TrackingStatus {
+impl Message for TrackingStatus {
     const PREFIX: &'static [u8] = b"#K";
 }
 

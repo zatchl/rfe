@@ -3,7 +3,7 @@ pub mod rf_explorer;
 pub mod signal_generator;
 pub mod spectrum_analyzer;
 
-pub use rf_explorer::{Error, Model, Result, RfExplorer, RfeMessage};
+pub use rf_explorer::{Error, Message, Model, Result, RfExplorer};
 pub use signal_generator::SignalGenerator;
 pub use spectrum_analyzer::SpectrumAnalyzer;
 

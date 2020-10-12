@@ -1,4 +1,4 @@
-use crate::rf_explorer::{ParseMessageError, RfeMessage};
+use crate::rf_explorer::{Message, ParseMessageError};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::TryFrom;
 
@@ -10,7 +10,7 @@ pub enum DspMode {
     Fast = b'2',
 }
 
-impl RfeMessage for DspMode {
+impl Message for DspMode {
     const PREFIX: &'static [u8] = b"DSP:";
 }
 

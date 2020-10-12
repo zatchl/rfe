@@ -1,4 +1,4 @@
-use crate::rf_explorer::{ParseMessageError, RfeMessage};
+use crate::rf_explorer::{Message, ParseMessageError};
 use std::convert::{TryFrom, TryInto};
 
 #[derive(Clone)]
@@ -16,7 +16,7 @@ impl ScreenData {
     }
 }
 
-impl RfeMessage for ScreenData {
+impl Message for ScreenData {
     const PREFIX: &'static [u8] = b"$D";
 }
 

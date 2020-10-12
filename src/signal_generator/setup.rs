@@ -1,7 +1,7 @@
 use crate::Model;
-use rfe_message::RfeMessage;
+use rfe_message::Message;
 
-#[derive(Debug, Clone, RfeMessage)]
+#[derive(Debug, Clone, Message)]
 #[prefix = "#C3-M:"]
 pub struct Setup {
     main_model: Model,

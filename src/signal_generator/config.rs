@@ -1,6 +1,6 @@
-use rfe_message::RfeMessage;
+use rfe_message::Message;
 
-#[derive(Debug, Copy, Clone, RfeMessage)]
+#[derive(Debug, Copy, Clone, Message)]
 #[prefix = "#C3-*:"]
 pub struct Config {
     start_freq_khz: f64,

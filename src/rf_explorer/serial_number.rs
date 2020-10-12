@@ -1,6 +1,6 @@
-use rfe_message::RfeMessage;
+use rfe_message::Message;
 
-#[derive(Debug, Clone, Eq, PartialEq, RfeMessage)]
+#[derive(Debug, Clone, Eq, PartialEq, Message)]
 #[prefix = "#Sn"]
 pub struct SerialNumber {
     serial_number: String,

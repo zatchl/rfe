@@ -1,9 +1,9 @@
 use crate::rf_explorer::ParseMessageError;
 use num_enum::TryFromPrimitive;
-use rfe_message::RfeMessage;
+use rfe_message::Message;
 use std::{convert::TryFrom, str::FromStr};
 
-#[derive(Debug, Copy, Clone, RfeMessage)]
+#[derive(Debug, Copy, Clone, Message)]
 #[prefix = "#T:"]
 pub struct Temperature {
     temperature_range: TemperatureRange,
