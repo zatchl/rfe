@@ -76,7 +76,7 @@ impl SpectrumAnalyzer {
         end_freq_khz: f64,
         amp_bottom_dbm: i16,
         amp_top_dbm: i16,
-    ) -> Result<()> {
+    ) -> Result<Config> {
         self.validate_freq_range(start_freq_khz..=end_freq_khz)?;
         self.validate_amp_range(amp_bottom_dbm..=amp_top_dbm)?;
 
@@ -89,11 +89,10 @@ impl SpectrumAnalyzer {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(command.as_bytes())?;
 
-        self.config = self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
-        Ok(())
+        self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)
     }
 
-    pub fn set_freq_range(&mut self, start_freq_khz: f64, end_freq_khz: f64) -> Result<()> {
+    pub fn set_freq_range(&mut self, start_freq_khz: f64, end_freq_khz: f64) -> Result<Config> {
         self.set_config(
             start_freq_khz,
             end_freq_khz,
@@ -102,19 +101,10 @@ impl SpectrumAnalyzer {
         )
     }
 
-    pub fn set_center_span(&mut self, center_freq_khz: f64, span_khz: f64) -> Result<()> {
+    pub fn set_center_span(&mut self, center_freq_khz: f64, span_khz: f64) -> Result<Config> {
         self.set_freq_range(
             center_freq_khz - span_khz / 2f64,
             center_freq_khz + span_khz / 2f64,
-        )
-    }
-
-    pub fn set_amp_range(&mut self, amp_bottom_dbm: i16, amp_top_dbm: i16) -> Result<()> {
-        self.set_config(
-            self.config.start_freq_khz(),
-            self.config.end_freq_khz(),
-            amp_bottom_dbm,
-            amp_top_dbm,
         )
     }
 
