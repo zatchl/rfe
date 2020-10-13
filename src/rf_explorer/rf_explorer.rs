@@ -34,8 +34,6 @@ pub trait RfExplorer: for<'a> TryFrom<&'a SerialPortInfo> {
 
     fn setup(&self) -> Self::Setup;
 
-    fn config(&self) -> Self::Config;
-
     fn wait_for_response<T>(&mut self, timeout: Duration) -> Result<T>
     where
         T: for<'a> TryFrom<&'a [u8]>;
@@ -229,10 +227,6 @@ macro_rules! impl_rf_explorer {
 
             fn setup(&self) -> Self::Setup {
                 self.setup.clone()
-            }
-
-            fn config(&self) -> Self::Config {
-                self.config
             }
 
             fn wait_for_response<T>(
