@@ -25,9 +25,8 @@ pub enum InputStage {
 
 #[derive(Debug, Copy, Clone, IntoPrimitive)]
 #[repr(u8)]
-pub enum WifiMode {
-    Disabled = 0,
-    TwoPointFourGhz,
+pub enum WifiBand {
+    TwoPointFourGhz = 1,
     FiveGhz,
 }
 
@@ -116,8 +115,12 @@ impl SpectrumAnalyzer {
         self.write_command(&[b'C', b'M', 1])
     }
 
-    pub fn set_wifi_mode(&mut self, wifi_mode: WifiMode) -> Result<()> {
-        self.write_command(&[b'C', b'W', wifi_mode.into()])
+    pub fn start_wifi_analyzer(&mut self, wifi_band: WifiBand) -> Result<()> {
+        self.write_command(&[b'C', b'W', wifi_band.into()])
+    }
+
+    pub fn stop_wifi_analyzer(&mut self) -> Result<()> {
+        self.write_command(&[b'C', b'W', 0])
     }
 
     pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> Result<()> {
