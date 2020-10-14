@@ -27,7 +27,7 @@ pub enum PowerLevel {
 }
 
 impl SignalGenerator {
-    pub fn enable_cw(
+    pub fn start_cw(
         &mut self,
         cw_freq_khz: f64,
         attenuation: Attenuation,
@@ -42,7 +42,7 @@ impl SignalGenerator {
         self.write_command(command.as_bytes())
     }
 
-    pub fn enable_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) -> Result<()> {
+    pub fn start_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) -> Result<()> {
         let command = format!("C5-F:{:07.0},{:+05.1}", cw_freq_khz, power_dbm);
         self.write_command(command.as_bytes())
     }
