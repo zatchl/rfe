@@ -42,8 +42,9 @@ impl SignalGenerator {
         self.write_command(command.as_bytes())
     }
 
-    pub fn enable_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) {
-        todo!()
+    pub fn enable_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) -> Result<()> {
+        let command = format!("C5-F:{:07.0},{:+05.1}", cw_freq_khz, power_dbm);
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_freq_sweep(
@@ -74,8 +75,12 @@ impl SignalGenerator {
         sweep_steps: u16,
         freq_step_khz: f64,
         step_delay_ms: u32,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C5-F:{:07.0},{:+05.1},{:04},{:07.0},{:05}",
+            start_freq_khz, power_dbm, sweep_steps, freq_step_khz, step_delay_ms
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_tracking(
@@ -103,8 +108,12 @@ impl SignalGenerator {
         power_dbm: f64,
         sweep_steps: u16,
         freq_step_khz: f64,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C5-T:{:07.0},{:+05.1},{:04},{:07.0}",
+            start_freq_khz, power_dbm, sweep_steps, freq_step_khz
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn start_amp_sweep(
@@ -135,8 +144,12 @@ impl SignalGenerator {
         step_power_db: f64,
         stop_power_dbm: f64,
         step_delay_ms: u32,
-    ) {
-        todo!()
+    ) -> Result<()> {
+        let command = format!(
+            "C5-A:{:07.0},{:+05.1},{:+05.1},{:05.1},{:05}",
+            cw_freq_khz, start_power_dbm, step_power_db, stop_power_dbm, step_delay_ms
+        );
+        self.write_command(command.as_bytes())
     }
 
     pub fn enable_rf_power(&mut self) -> Result<()> {
