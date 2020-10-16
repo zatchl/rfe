@@ -4,7 +4,7 @@ use rfe_message::Message;
 use std::convert::TryFrom;
 use std::str::FromStr;
 
-#[derive(Debug, Copy, Clone, Message)]
+#[derive(Debug, Copy, Clone, PartialEq, Message)]
 #[prefix = "#C2-F:"]
 pub struct Config {
     start_freq_khz: f64,

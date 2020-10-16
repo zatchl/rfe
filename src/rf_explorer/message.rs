@@ -5,7 +5,7 @@ pub trait Message: for<'a> TryFrom<&'a [u8]> {
     const PREFIX: &'static [u8];
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Eq, PartialEq)]
 pub enum ParseMessageError {
     #[error("")]
     MissingField,

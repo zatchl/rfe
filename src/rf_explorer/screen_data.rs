@@ -1,7 +1,7 @@
 use crate::rf_explorer::{Message, ParseMessageError};
 use std::convert::{TryFrom, TryInto};
 
-#[derive(Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ScreenData {
     screen_data_matrix: [[u8; ScreenData::COLUMNS]; ScreenData::ROWS],
 }

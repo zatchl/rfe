@@ -15,7 +15,7 @@ pub struct SpectrumAnalyzer {
     message_buf: Vec<u8>,
 }
 
-#[derive(Debug, Copy, Clone, IntoPrimitive)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
 pub enum InputStage {
     Bypass = b'0',
@@ -23,7 +23,7 @@ pub enum InputStage {
     Lna25dB = b'2',
 }
 
-#[derive(Debug, Copy, Clone, IntoPrimitive)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
 pub enum WifiBand {
     TwoPointFourGhz = 1,

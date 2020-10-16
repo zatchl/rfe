@@ -2,13 +2,13 @@ use chrono::{DateTime, Utc};
 use std::{cmp::Ordering, convert::TryFrom};
 use thiserror::Error;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Sweep {
     amplitudes_dbm: Vec<f32>,
     timestamp: DateTime<Utc>,
 }
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Eq, PartialEq)]
 pub enum ParseSweepError {
     #[error("Invalid RfExplorerSweep")]
     InvalidFormatError,
