@@ -108,11 +108,15 @@ impl SpectrumAnalyzer {
     }
 
     pub fn switch_module_main(&mut self) -> Result<()> {
-        self.write_command(&[b'C', b'M', 0])
+        self.write_command(&[b'C', b'M', 0])?;
+        self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        Ok(())
     }
 
     pub fn switch_module_expansion(&mut self) -> Result<()> {
-        self.write_command(&[b'C', b'M', 1])
+        self.write_command(&[b'C', b'M', 1])?;
+        self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        Ok(())
     }
 
     pub fn start_wifi_analyzer(&mut self, wifi_band: WifiBand) -> Result<()> {
