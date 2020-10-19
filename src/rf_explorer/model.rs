@@ -19,6 +19,15 @@ pub enum Model {
     Rfe6GPlus = 14,
 }
 
+impl Model {
+    pub fn is_plus_model(&self) -> bool {
+        match self {
+            Model::RfeWSub1GPlus | Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => true,
+            _ => false,
+        }
+    }
+}
+
 impl FromStr for Model {
     type Err = ParseMessageError;
 
