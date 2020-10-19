@@ -26,6 +26,19 @@ impl Model {
             _ => false,
         }
     }
+
+    pub fn has_wifi_analyzer(&self) -> bool {
+        match self {
+            Model::Rfe24G
+            | Model::RfeWSub3G
+            | Model::Rfe6G
+            | Model::RfeProAudio
+            | Model::Rfe24GPlus
+            | Model::Rfe4GPlus
+            | Model::Rfe6GPlus => true,
+            _ => false,
+        }
+    }
 }
 
 impl FromStr for Model {
