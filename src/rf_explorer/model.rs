@@ -1,6 +1,6 @@
 use crate::rf_explorer::ParseMessageError;
 use num_enum::TryFromPrimitive;
-use std::{convert::TryFrom, str, str::FromStr};
+use std::{convert::TryFrom, fmt::Display, str, str::FromStr};
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
@@ -24,5 +24,24 @@ impl FromStr for Model {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(u8::from_str(s)?).map_err(|_| ParseMessageError::InvalidData)
+    }
+}
+
+impl Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Model::Rfe433M => write!(f, "433M"),
+            Model::Rfe868M => write!(f, "868M"),
+            Model::Rfe915M => write!(f, "915M"),
+            Model::RfeWSub1G => write!(f, "WSUB1G"),
+            Model::Rfe24G => write!(f, "2.4G"),
+            Model::RfeWSub3G => write!(f, "WSUB3G"),
+            Model::Rfe6G => write!(f, "6G"),
+            Model::RfeWSub1GPlus => write!(f, "WSUB1G+"),
+            Model::RfeProAudio => write!(f, "Pro Audio"),
+            Model::Rfe24GPlus => write!(f, "2.4G+"),
+            Model::Rfe4GPlus => write!(f, "4G+"),
+            Model::Rfe6GPlus => write!(f, "6G+"),
+        }
     }
 }
