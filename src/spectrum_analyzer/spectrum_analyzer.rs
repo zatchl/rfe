@@ -69,17 +69,17 @@ impl SpectrumAnalyzer {
         Err(Error::ResponseTimedOut(timeout))
     }
 
-    pub fn set_freq_range(&mut self, start_freq_khz: f64, end_freq_khz: f64) -> Result<Config> {
+    pub fn set_start_stop(&mut self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<Config> {
         self.set_config(
             start_freq_khz,
-            end_freq_khz,
+            stop_freq_khz,
             self.config.amp_bottom_dbm(),
             self.config.amp_top_dbm(),
         )
     }
 
     pub fn set_center_span(&mut self, center_freq_khz: f64, span_khz: f64) -> Result<Config> {
-        self.set_freq_range(
+        self.set_start_stop(
             center_freq_khz - span_khz / 2f64,
             center_freq_khz + span_khz / 2f64,
         )
@@ -153,16 +153,16 @@ impl SpectrumAnalyzer {
     fn set_config(
         &mut self,
         start_freq_khz: f64,
-        end_freq_khz: f64,
+        stop_freq_khz: f64,
         amp_bottom_dbm: i16,
         amp_top_dbm: i16,
     ) -> Result<Config> {
-        self.validate_freq_range(start_freq_khz..=end_freq_khz)?;
+        self.validate_start_stop(start_freq_khz, stop_freq_khz)?;
         self.validate_amp_range(amp_bottom_dbm..=amp_top_dbm)?;
 
         let command = format!(
             "C2-F:{:07.0},{:07.0},{:04},{:04}",
-            start_freq_khz, end_freq_khz, amp_top_dbm, amp_bottom_dbm
+            start_freq_khz, stop_freq_khz, amp_top_dbm, amp_bottom_dbm
         );
         // Before asking the RF Explorer to change its config, we should clear the serial port's input buffer
         // This will allow us to read the RF Explorer's response without having to read a bunch of unrelated data first
@@ -172,34 +172,34 @@ impl SpectrumAnalyzer {
         self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)
     }
 
-    fn validate_freq_range(&self, freq_range_khz: RangeInclusive<f64>) -> Result<()> {
-        if freq_range_khz.start() >= freq_range_khz.end() {
+    fn validate_start_stop(&self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<()> {
+        if start_freq_khz >= stop_freq_khz {
             return Err(Error::InvalidInput(
                 "The start frequency must be less than the end frequency".to_string(),
             ));
         }
 
         let min_max_freq_range_khz = self.config.min_freq_khz()..=self.config.max_freq_khz();
-        if !min_max_freq_range_khz.contains(freq_range_khz.start()) {
+        if !min_max_freq_range_khz.contains(&start_freq_khz) {
             return Err(Error::InvalidInput(format!(
                 "The start frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
-                freq_range_khz.start(),
+                start_freq_khz,
                 min_max_freq_range_khz.start(),
                 min_max_freq_range_khz.end()
             )));
-        } else if !min_max_freq_range_khz.contains(freq_range_khz.end()) {
+        } else if !min_max_freq_range_khz.contains(&stop_freq_khz) {
             return Err(Error::InvalidInput(format!(
-                "The end frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
-                freq_range_khz.end(),
+                "The stop frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
+                stop_freq_khz,
                 min_max_freq_range_khz.start(),
                 min_max_freq_range_khz.end()
             )));
         }
 
-        if freq_range_khz.end() - freq_range_khz.start() > self.config.max_span_khz() {
+        if stop_freq_khz - start_freq_khz > self.config.max_span_khz() {
             return Err(Error::InvalidInput(format!(
                 "The span {} kHz must be less than or equal to the RF Explorer's max span {} kHz",
-                freq_range_khz.end() - freq_range_khz.start(),
+                stop_freq_khz - start_freq_khz,
                 self.config.max_span_khz()
             )));
         }

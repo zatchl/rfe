@@ -62,7 +62,7 @@ impl Config {
         self.start_freq_khz
     }
 
-    pub fn end_freq_khz(&self) -> f64 {
+    pub fn stop_freq_khz(&self) -> f64 {
         self.start_freq_khz + f64::from(self.sweep_points - 1) * (self.freq_step_hz / 1000f64)
     }
 
