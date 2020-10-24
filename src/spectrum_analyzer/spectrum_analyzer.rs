@@ -69,28 +69,6 @@ impl SpectrumAnalyzer {
         Err(Error::ResponseTimedOut(timeout))
     }
 
-    pub fn set_config(
-        &mut self,
-        start_freq_khz: f64,
-        end_freq_khz: f64,
-        amp_bottom_dbm: i16,
-        amp_top_dbm: i16,
-    ) -> Result<Config> {
-        self.validate_freq_range(start_freq_khz..=end_freq_khz)?;
-        self.validate_amp_range(amp_bottom_dbm..=amp_top_dbm)?;
-
-        let command = format!(
-            "C2-F:{:07.0},{:07.0},{:04},{:04}",
-            start_freq_khz, end_freq_khz, amp_top_dbm, amp_bottom_dbm
-        );
-        // Before asking the RF Explorer to change its config, we should clear the serial port's input buffer
-        // This will allow us to read the RF Explorer's response without having to read a bunch of unrelated data first
-        self.reader.get_ref().clear(ClearBuffer::Input)?;
-        self.write_command(command.as_bytes())?;
-
-        self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)
-    }
-
     pub fn set_freq_range(&mut self, start_freq_khz: f64, end_freq_khz: f64) -> Result<Config> {
         self.set_config(
             start_freq_khz,
@@ -170,6 +148,28 @@ impl SpectrumAnalyzer {
             let sweep_points_bytes = sweep_points.to_be_bytes();
             self.write_command(&[b'C', b'j', sweep_points_bytes[0], sweep_points_bytes[1]])
         }
+    }
+
+    fn set_config(
+        &mut self,
+        start_freq_khz: f64,
+        end_freq_khz: f64,
+        amp_bottom_dbm: i16,
+        amp_top_dbm: i16,
+    ) -> Result<Config> {
+        self.validate_freq_range(start_freq_khz..=end_freq_khz)?;
+        self.validate_amp_range(amp_bottom_dbm..=amp_top_dbm)?;
+
+        let command = format!(
+            "C2-F:{:07.0},{:07.0},{:04},{:04}",
+            start_freq_khz, end_freq_khz, amp_top_dbm, amp_bottom_dbm
+        );
+        // Before asking the RF Explorer to change its config, we should clear the serial port's input buffer
+        // This will allow us to read the RF Explorer's response without having to read a bunch of unrelated data first
+        self.reader.get_ref().clear(ClearBuffer::Input)?;
+        self.write_command(command.as_bytes())?;
+
+        self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)
     }
 
     fn validate_freq_range(&self, freq_range_khz: RangeInclusive<f64>) -> Result<()> {
