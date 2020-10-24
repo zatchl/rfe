@@ -12,7 +12,7 @@ pub struct Config {
     max_amp_dbm: i16,
     min_amp_dbm: i16,
     sweep_points: u32,
-    active_module: ActiveModule,
+    active_radio_module: RadioModule,
     mode: Mode,
     min_freq_khz: f64,
     max_freq_khz: f64,
@@ -27,7 +27,7 @@ pub struct Config {
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
-pub enum ActiveModule {
+pub enum RadioModule {
     Main = 0,
     Expansion,
 }
@@ -82,8 +82,8 @@ impl Config {
         self.sweep_points
     }
 
-    pub fn active_module(&self) -> ActiveModule {
-        self.active_module
+    pub fn active_radio_module(&self) -> RadioModule {
+        self.active_radio_module
     }
 
     pub fn mode(&self) -> Mode {
@@ -115,7 +115,7 @@ impl Config {
     }
 }
 
-impl FromStr for ActiveModule {
+impl FromStr for RadioModule {
     type Err = ParseMessageError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -153,7 +153,7 @@ mod tests {
         assert_eq!(config.max_amp_dbm(), -30);
         assert_eq!(config.min_amp_dbm(), -118);
         assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_module(), ActiveModule::Main);
+        assert_eq!(config.active_radio_module(), RadioModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq_khz(), 4_850_000f64);
         assert_eq!(config.max_freq_khz(), 6_100_000f64);
@@ -169,11 +169,11 @@ mod tests {
             b"#C2-F:0096000,0090072,-010,-120,0112,0,000,0000050,0960000,0959950,00110,0000,000";
         let config = Config::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config.start_freq_khz(), 96_000f64);
-        assert_eq!(config.freq_step_hz(), 90072f64);
+        assert_eq!(config.step_freq_hz(), 90072f64);
         assert_eq!(config.max_amp_dbm(), -10);
         assert_eq!(config.min_amp_dbm(), -120);
         assert_eq!(config.sweep_points(), 112);
-        assert_eq!(config.active_module(), ActiveModule::Main);
+        assert_eq!(config.active_radio_module(), RadioModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
         assert_eq!(config.min_freq_khz(), 50f64);
         assert_eq!(config.max_freq_khz(), 960000f64);
