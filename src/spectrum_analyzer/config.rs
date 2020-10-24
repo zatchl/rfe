@@ -9,8 +9,8 @@ use std::str::FromStr;
 pub struct Config {
     start_freq_khz: f64,
     freq_step_hz: f64,
-    amp_top_dbm: i16,
-    amp_bottom_dbm: i16,
+    min_amp_dbm: i16,
+    max_amp_dbm: i16,
     sweep_points: u32,
     active_module: ActiveModule,
     mode: Mode,
@@ -70,12 +70,12 @@ impl Config {
         self.freq_step_hz
     }
 
-    pub fn amp_top_dbm(&self) -> i16 {
-        self.amp_top_dbm
+    pub fn min_amp_dbm(&self) -> i16 {
+        self.min_amp_dbm
     }
 
-    pub fn amp_bottom_dbm(&self) -> i16 {
-        self.amp_bottom_dbm
+    pub fn max_amp_dbm(&self) -> i16 {
+        self.max_amp_dbm
     }
 
     pub fn sweep_points(&self) -> u32 {
@@ -150,8 +150,8 @@ mod tests {
         let config = Config::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config.start_freq_khz(), 5_249_000f64);
         assert_eq!(config.freq_step_hz(), 196_428f64);
-        assert_eq!(config.amp_top_dbm(), -30);
-        assert_eq!(config.amp_bottom_dbm(), -118);
+        assert_eq!(config.max_amp_dbm(), -30);
+        assert_eq!(config.min_amp_dbm(), -118);
         assert_eq!(config.sweep_points(), 112);
         assert_eq!(config.active_module(), ActiveModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);
@@ -170,8 +170,8 @@ mod tests {
         let config = Config::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config.start_freq_khz(), 96_000f64);
         assert_eq!(config.freq_step_hz(), 90072f64);
-        assert_eq!(config.amp_top_dbm(), -10);
-        assert_eq!(config.amp_bottom_dbm(), -120);
+        assert_eq!(config.max_amp_dbm(), -10);
+        assert_eq!(config.min_amp_dbm(), -120);
         assert_eq!(config.sweep_points(), 112);
         assert_eq!(config.active_module(), ActiveModule::Main);
         assert_eq!(config.mode(), Mode::SpectrumAnalyzer);

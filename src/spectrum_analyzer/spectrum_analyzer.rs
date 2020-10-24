@@ -73,8 +73,8 @@ impl SpectrumAnalyzer {
         self.set_config(
             start_freq_khz,
             stop_freq_khz,
-            self.config.amp_bottom_dbm(),
-            self.config.amp_top_dbm(),
+            self.config.min_amp_dbm(),
+            self.config.max_amp_dbm(),
         )
     }
 
@@ -82,6 +82,16 @@ impl SpectrumAnalyzer {
         self.set_start_stop(
             center_freq_khz - span_khz / 2f64,
             center_freq_khz + span_khz / 2f64,
+        )
+    }
+
+    /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
+    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<Config> {
+        self.set_config(
+            self.config.start_freq_khz(),
+            self.config.stop_freq_khz(),
+            min_amp_dbm,
+            max_amp_dbm,
         )
     }
 
@@ -154,15 +164,15 @@ impl SpectrumAnalyzer {
         &mut self,
         start_freq_khz: f64,
         stop_freq_khz: f64,
-        amp_bottom_dbm: i16,
-        amp_top_dbm: i16,
+        min_amp_dbm: i16,
+        max_amp_dbm: i16,
     ) -> Result<Config> {
         self.validate_start_stop(start_freq_khz, stop_freq_khz)?;
-        self.validate_amp_range(amp_bottom_dbm..=amp_top_dbm)?;
+        self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
         let command = format!(
             "C2-F:{:07.0},{:07.0},{:04},{:04}",
-            start_freq_khz, stop_freq_khz, amp_top_dbm, amp_bottom_dbm
+            start_freq_khz, stop_freq_khz, max_amp_dbm, min_amp_dbm
         );
         // Before asking the RF Explorer to change its config, we should clear the serial port's input buffer
         // This will allow us to read the RF Explorer's response without having to read a bunch of unrelated data first
@@ -207,16 +217,16 @@ impl SpectrumAnalyzer {
         Ok(())
     }
 
-    fn validate_amp_range(&self, amp_range_dbm: RangeInclusive<i16>) -> Result<()> {
+    fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         // The bottom amplitude must be less than the top amplitude
-        if amp_range_dbm.start() >= amp_range_dbm.end() {
+        if min_amp_dbm >= max_amp_dbm {
             return Err(Error::InvalidInput("".to_string()));
         }
 
         // The top and bottom amplitude must be within the RF Explorer's min and max amplitude range
-        if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(amp_range_dbm.start()) {
+        if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&min_amp_dbm) {
             return Err(Error::InvalidInput("".to_string()));
-        } else if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(amp_range_dbm.end()) {
+        } else if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&max_amp_dbm) {
             return Err(Error::InvalidInput("".to_string()));
         }
 
