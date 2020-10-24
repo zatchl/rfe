@@ -9,8 +9,8 @@ use std::str::FromStr;
 pub struct Config {
     start_freq_khz: f64,
     freq_step_hz: f64,
-    min_amp_dbm: i16,
     max_amp_dbm: i16,
+    min_amp_dbm: i16,
     sweep_points: u32,
     active_module: ActiveModule,
     mode: Mode,
