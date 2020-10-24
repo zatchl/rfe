@@ -8,7 +8,7 @@ use std::str::FromStr;
 #[prefix = "#C2-F:"]
 pub struct Config {
     start_freq_khz: f64,
-    freq_step_hz: f64,
+    step_freq_hz: f64,
     max_amp_dbm: i16,
     min_amp_dbm: i16,
     sweep_points: u32,
@@ -63,11 +63,11 @@ impl Config {
     }
 
     pub fn stop_freq_khz(&self) -> f64 {
-        self.start_freq_khz + f64::from(self.sweep_points - 1) * (self.freq_step_hz / 1000f64)
+        self.start_freq_khz + f64::from(self.sweep_points - 1) * (self.step_freq_hz / 1000f64)
     }
 
-    pub fn freq_step_hz(&self) -> f64 {
-        self.freq_step_hz
+    pub fn step_freq_hz(&self) -> f64 {
+        self.step_freq_hz
     }
 
     pub fn min_amp_dbm(&self) -> i16 {
@@ -149,7 +149,7 @@ mod tests {
             b"#C2-F:5249000,0196428,-030,-118,0112,0,000,4850000,6100000,0600000,00200,0000,000";
         let config = Config::try_from(bytes.as_ref()).unwrap();
         assert_eq!(config.start_freq_khz(), 5_249_000f64);
-        assert_eq!(config.freq_step_hz(), 196_428f64);
+        assert_eq!(config.step_freq_hz(), 196_428f64);
         assert_eq!(config.max_amp_dbm(), -30);
         assert_eq!(config.min_amp_dbm(), -118);
         assert_eq!(config.sweep_points(), 112);
