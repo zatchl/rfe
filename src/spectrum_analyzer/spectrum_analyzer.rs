@@ -35,11 +35,13 @@ impl SpectrumAnalyzer {
     const DEFAULT_NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
     const DEFAULT_REQUEST_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
 
-    pub fn next_sweep(&mut self) -> Result<Sweep> {
-        self.next_sweep_with_timeout(SpectrumAnalyzer::DEFAULT_NEXT_SWEEP_TIMEOUT)
+    /// Returns the next sweep measured by the spectrum analyzer.
+    pub fn get_sweep(&mut self) -> Result<Sweep> {
+        self.get_sweep_with_timeout(SpectrumAnalyzer::DEFAULT_NEXT_SWEEP_TIMEOUT)
     }
 
-    pub fn next_sweep_with_timeout(&mut self, timeout: Duration) -> Result<Sweep> {
+    /// Returns the next sweep measured by the spectrum analyzer.
+    pub fn get_sweep_with_timeout(&mut self, timeout: Duration) -> Result<Sweep> {
         // Before reading the next sweep, we should clear the serial port's input buffer
         // This will prevent us from reading a stale sweep
         self.reader.get_ref().clear(ClearBuffer::Input)?;
