@@ -8,6 +8,10 @@ use serialport::ClearBuffer;
 use std::{
     convert::TryFrom, fmt::Debug, io::BufRead, ops::RangeInclusive, time::Duration, time::Instant,
 };
+use uom::si::{
+    f64::Frequency,
+    frequency::{kilohertz, megahertz},
+};
 
 pub struct SpectrumAnalyzer {
     reader: SerialPortReader,
@@ -91,27 +95,28 @@ impl SpectrumAnalyzer {
         Err(Error::ResponseTimedOut(timeout))
     }
 
-    pub fn set_start_stop(&mut self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<Config> {
+    pub fn set_start_stop(
+        &mut self,
+        start_freq: Frequency,
+        stop_freq: Frequency,
+    ) -> Result<Config> {
         self.set_config(
-            start_freq_khz,
-            stop_freq_khz,
+            start_freq,
+            stop_freq,
             self.config.min_amp_dbm(),
             self.config.max_amp_dbm(),
         )
     }
 
-    pub fn set_center_span(&mut self, center_freq_khz: f64, span_khz: f64) -> Result<Config> {
-        self.set_start_stop(
-            center_freq_khz - span_khz / 2f64,
-            center_freq_khz + span_khz / 2f64,
-        )
+    pub fn set_center_span(&mut self, center_freq: Frequency, span: Frequency) -> Result<Config> {
+        self.set_start_stop(center_freq - span / 2., center_freq + span / 2.)
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
     pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<Config> {
         self.set_config(
-            self.config.start_freq_khz(),
-            self.config.stop_freq_khz(),
+            self.config.start_freq(),
+            self.config.stop_freq(),
             min_amp_dbm,
             max_amp_dbm,
         )
@@ -143,11 +148,15 @@ impl SpectrumAnalyzer {
 
     pub fn request_tracking(
         &mut self,
-        start_freq_khz: f64,
-        freq_step_khz: f64,
+        start_freq: Frequency,
+        freq_step: Frequency,
     ) -> Result<TrackingStatus> {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
-        let command = format!("C3-K:{:07.0},{:07.0}", start_freq_khz, freq_step_khz);
+        let command = format!(
+            "C3-K:{:07.0},{:07.0}",
+            start_freq.get::<kilohertz>(),
+            freq_step.get::<kilohertz>()
+        );
         self.write_command(command.as_bytes())?;
 
         self.wait_for_response(Duration::from_secs(3))
@@ -184,17 +193,20 @@ impl SpectrumAnalyzer {
 
     fn set_config(
         &mut self,
-        start_freq_khz: f64,
-        stop_freq_khz: f64,
+        start_freq: Frequency,
+        stop_freq: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
     ) -> Result<Config> {
-        self.validate_start_stop(start_freq_khz, stop_freq_khz)?;
+        self.validate_start_stop(start_freq, stop_freq)?;
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
         let command = format!(
             "C2-F:{:07.0},{:07.0},{:04},{:04}",
-            start_freq_khz, stop_freq_khz, max_amp_dbm, min_amp_dbm
+            start_freq.get::<kilohertz>(),
+            stop_freq.get::<kilohertz>(),
+            max_amp_dbm,
+            min_amp_dbm
         );
         // Before asking the RF Explorer to change its config, we should clear the serial port's input buffer
         // This will allow us to read the RF Explorer's response without having to read a bunch of unrelated data first
@@ -205,8 +217,8 @@ impl SpectrumAnalyzer {
         Ok(self.config)
     }
 
-    fn validate_start_stop(&self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<()> {
-        if start_freq_khz >= stop_freq_khz {
+    fn validate_start_stop(&self, start_freq: Frequency, stop_freq: Frequency) -> Result<()> {
+        if start_freq >= stop_freq {
             return Err(Error::InvalidInput(
                 "The start frequency must be less than the stop frequency".to_string(),
             ));
@@ -214,30 +226,30 @@ impl SpectrumAnalyzer {
 
         let active_model = self.active_model();
 
-        let min_max_freq_hz = active_model.min_freq_hz()..=active_model.max_freq_hz();
-        if !min_max_freq_hz.contains(&(start_freq_khz * 1000.)) {
+        let min_max_freq = active_model.min_freq()..=active_model.max_freq();
+        if !min_max_freq.contains(&start_freq) {
             return Err(Error::InvalidInput(format!(
-                "The start frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
-                start_freq_khz,
-                min_max_freq_hz.start() / 1000.,
-                min_max_freq_hz.end() / 1000.
+                "The start frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                start_freq.get::<megahertz>(),
+                min_max_freq.start().get::<megahertz>(),
+                min_max_freq.end().get::<megahertz>()
             )));
-        } else if !min_max_freq_hz.contains(&(stop_freq_khz * 1000.)) {
+        } else if !min_max_freq.contains(&stop_freq) {
             return Err(Error::InvalidInput(format!(
-                "The stop frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
-                stop_freq_khz,
-                min_max_freq_hz.start() / 1000.,
-                min_max_freq_hz.end() / 1000.
+                "The stop frequency {} MHz is not within the RF Explorer's frequency range of {}-{} MHz",
+                stop_freq.get::<megahertz>(),
+                min_max_freq.start().get::<megahertz>(),
+                min_max_freq.end().get::<megahertz>()
             )));
         }
 
-        let min_max_span_hz = active_model.min_span_hz()..=active_model.max_span_hz();
-        if !min_max_span_hz.contains(&((stop_freq_khz - start_freq_khz) * 1000.)) {
+        let min_max_span = active_model.min_span()..=active_model.max_span();
+        if !min_max_span.contains(&(stop_freq - start_freq)) {
             return Err(Error::InvalidInput(format!(
-                "The span {} kHz is not within the RF Explorer's span range of {}-{} kHz",
-                stop_freq_khz - start_freq_khz,
-                min_max_span_hz.start() / 1000.,
-                min_max_span_hz.end() / 1000.
+                "The span {} MHz is not within the RF Explorer's span range of {}-{} MHz",
+                (stop_freq - start_freq).get::<megahertz>(),
+                min_max_span.start().get::<megahertz>(),
+                min_max_span.end().get::<megahertz>()
             )));
         }
 

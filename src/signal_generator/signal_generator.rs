@@ -2,6 +2,7 @@ use crate::rf_explorer::{Result, RfExplorer, SerialPortReader};
 use crate::spectrum_analyzer::{Config, Setup};
 use num_enum::IntoPrimitive;
 use std::fmt::Debug;
+use uom::si::{f64::Frequency, frequency::kilohertz};
 
 pub struct SignalGenerator {
     reader: SerialPortReader,
@@ -29,40 +30,44 @@ pub enum PowerLevel {
 impl SignalGenerator {
     pub fn start_cw(
         &mut self,
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
     ) -> Result<()> {
         let command = format!(
             "C3-F:{:07.0},{},{}",
-            cw_freq_khz,
+            cw_freq.get::<kilohertz>(),
             u8::from(attenuation),
             u8::from(power_level)
         );
         self.write_command(command.as_bytes())
     }
 
-    pub fn start_cw_exp(&mut self, cw_freq_khz: f64, power_dbm: f64) -> Result<()> {
-        let command = format!("C5-F:{:07.0},{:+05.1}", cw_freq_khz, power_dbm);
+    pub fn start_cw_exp(&mut self, cw_freq: Frequency, power_dbm: f64) -> Result<()> {
+        let command = format!(
+            "C5-F:{:07.0},{:+05.1}",
+            cw_freq.get::<kilohertz>(),
+            power_dbm
+        );
         self.write_command(command.as_bytes())
     }
 
     pub fn start_freq_sweep(
         &mut self,
-        start_freq_khz: f64,
+        start_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        freq_step_khz: f64,
+        freq_step: Frequency,
         step_delay_ms: u32,
     ) -> Result<()> {
         let command = format!(
             "C3-F:{:07.0},{},{},{:04},{:07.0},{:05}",
-            start_freq_khz,
+            start_freq.get::<kilohertz>(),
             u8::from(attenuation),
             u8::from(power_level),
             sweep_steps,
-            freq_step_khz,
+            freq_step.get::<kilohertz>(),
             step_delay_ms
         );
         self.write_command(command.as_bytes())
@@ -70,55 +75,62 @@ impl SignalGenerator {
 
     pub fn start_freq_sweep_exp(
         &mut self,
-        start_freq_khz: f64,
+        start_freq: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        freq_step_khz: f64,
+        freq_step: Frequency,
         step_delay_ms: u32,
     ) -> Result<()> {
         let command = format!(
             "C5-F:{:07.0},{:+05.1},{:04},{:07.0},{:05}",
-            start_freq_khz, power_dbm, sweep_steps, freq_step_khz, step_delay_ms
+            start_freq.get::<kilohertz>(),
+            power_dbm,
+            sweep_steps,
+            freq_step.get::<kilohertz>(),
+            step_delay_ms
         );
         self.write_command(command.as_bytes())
     }
 
     pub fn start_tracking(
         &mut self,
-        start_freq_khz: f64,
+        start_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
         sweep_steps: u16,
-        freq_step_khz: f64,
+        freq_step: Frequency,
     ) -> Result<()> {
         let command = format!(
             "C3-T:{:07.0},{},{},{:04},{:07.0}",
-            start_freq_khz,
+            start_freq.get::<kilohertz>(),
             u8::from(attenuation),
             u8::from(power_level),
             sweep_steps,
-            freq_step_khz
+            freq_step.get::<kilohertz>()
         );
         self.write_command(command.as_bytes())
     }
 
     pub fn start_tracking_exp(
         &mut self,
-        start_freq_khz: f64,
+        start_freq: Frequency,
         power_dbm: f64,
         sweep_steps: u16,
-        freq_step_khz: f64,
+        freq_step: Frequency,
     ) -> Result<()> {
         let command = format!(
             "C5-T:{:07.0},{:+05.1},{:04},{:07.0}",
-            start_freq_khz, power_dbm, sweep_steps, freq_step_khz
+            start_freq.get::<kilohertz>(),
+            power_dbm,
+            sweep_steps,
+            freq_step.get::<kilohertz>()
         );
         self.write_command(command.as_bytes())
     }
 
     pub fn start_amp_sweep(
         &mut self,
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         start_attenuation: Attenuation,
         start_power_level: PowerLevel,
         end_attenuation: Attenuation,
@@ -127,7 +139,7 @@ impl SignalGenerator {
     ) -> Result<()> {
         let command = format!(
             "C3-A:{:07.0},{},{},{},{},{:05}",
-            cw_freq_khz,
+            cw_freq.get::<kilohertz>(),
             u8::from(start_attenuation),
             u8::from(start_power_level),
             u8::from(end_attenuation),
@@ -139,7 +151,7 @@ impl SignalGenerator {
 
     pub fn start_amp_sweep_exp(
         &mut self,
-        cw_freq_khz: f64,
+        cw_freq: Frequency,
         start_power_dbm: f64,
         step_power_db: f64,
         stop_power_dbm: f64,
@@ -147,7 +159,11 @@ impl SignalGenerator {
     ) -> Result<()> {
         let command = format!(
             "C5-A:{:07.0},{:+05.1},{:+05.1},{:05.1},{:05}",
-            cw_freq_khz, start_power_dbm, step_power_db, stop_power_dbm, step_delay_ms
+            cw_freq.get::<kilohertz>(),
+            start_power_dbm,
+            step_power_db,
+            stop_power_dbm,
+            step_delay_ms
         );
         self.write_command(command.as_bytes())
     }

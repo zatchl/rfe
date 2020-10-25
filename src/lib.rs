@@ -7,6 +7,8 @@ pub use rf_explorer::{Error, Message, Model, Result, RfExplorer};
 pub use signal_generator::SignalGenerator;
 pub use spectrum_analyzer::SpectrumAnalyzer;
 
+pub use uom;
+
 use serialport;
 use std::convert::TryFrom;
 

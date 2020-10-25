@@ -1,6 +1,7 @@
 use crate::rf_explorer::ParseMessageError;
 use num_enum::TryFromPrimitive;
 use std::{convert::TryFrom, fmt::Display, str, str::FromStr};
+use uom::si::{f64::Frequency, frequency::hertz};
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]
@@ -40,8 +41,8 @@ impl Model {
         }
     }
 
-    pub const fn min_freq_hz(&self) -> f64 {
-        match self {
+    pub fn min_freq(&self) -> Frequency {
+        Frequency::new::<hertz>(match self {
             Model::Rfe433M => 430_000_000.,
             Model::Rfe868M => 860_000_000.,
             Model::Rfe915M => 910_000_000.,
@@ -51,11 +52,11 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 15_000_000.,
             Model::Rfe6G => 4_850_000_000.,
             Model::Rfe4GPlus | Model::Rfe6GPlus => 240_000_000.,
-        }
+        })
     }
 
-    pub const fn max_freq_hz(&self) -> f64 {
-        match self {
+    pub fn max_freq(&self) -> Frequency {
+        Frequency::new::<hertz>(match self {
             Model::Rfe433M => 440_000_000.,
             Model::Rfe868M => 870_000_000.,
             Model::Rfe915M => 920_000_000.,
@@ -64,11 +65,11 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 2_700_000_000.,
             Model::Rfe4GPlus => 4_000_000_000.,
             Model::Rfe6G | Model::Rfe6GPlus => 6_100_000_000.,
-        }
+        })
     }
 
-    pub const fn min_span_hz(&self) -> f64 {
-        match self {
+    pub fn min_span(&self) -> Frequency {
+        Frequency::new::<hertz>(match self {
             Model::Rfe433M
             | Model::Rfe868M
             | Model::Rfe915M
@@ -78,17 +79,17 @@ impl Model {
             | Model::RfeProAudio => 112_000.,
             Model::RfeWSub1GPlus => 100_000.,
             Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000.,
-        }
+        })
     }
 
-    pub const fn max_span_hz(&self) -> f64 {
-        match self {
+    pub fn max_span(&self) -> Frequency {
+        Frequency::new::<hertz>(match self {
             Model::Rfe433M | Model::Rfe868M | Model::Rfe915M => 10_000_000.,
             Model::RfeWSub1G | Model::Rfe24G => 100_000_000.,
             Model::Rfe24GPlus => 85_000_000.,
             Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000.,
             Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000.,
-        }
+        })
     }
 }
 
