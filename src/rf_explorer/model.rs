@@ -20,14 +20,14 @@ pub enum Model {
 }
 
 impl Model {
-    pub fn is_plus_model(&self) -> bool {
+    pub const fn is_plus_model(&self) -> bool {
         match self {
             Model::RfeWSub1GPlus | Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => true,
             _ => false,
         }
     }
 
-    pub fn has_wifi_analyzer(&self) -> bool {
+    pub const fn has_wifi_analyzer(&self) -> bool {
         match self {
             Model::Rfe24G
             | Model::RfeWSub3G
