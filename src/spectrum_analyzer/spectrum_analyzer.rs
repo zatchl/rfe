@@ -208,32 +208,36 @@ impl SpectrumAnalyzer {
     fn validate_start_stop(&self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<()> {
         if start_freq_khz >= stop_freq_khz {
             return Err(Error::InvalidInput(
-                "The start frequency must be less than the end frequency".to_string(),
+                "The start frequency must be less than the stop frequency".to_string(),
             ));
         }
 
-        let min_max_freq_range_khz = self.config.min_freq_khz()..=self.config.max_freq_khz();
-        if !min_max_freq_range_khz.contains(&start_freq_khz) {
+        let active_model = self.active_model();
+
+        let min_max_freq_hz = active_model.min_freq_hz()..=active_model.max_freq_hz();
+        if !min_max_freq_hz.contains(&(start_freq_khz * 1000.)) {
             return Err(Error::InvalidInput(format!(
                 "The start frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
                 start_freq_khz,
-                min_max_freq_range_khz.start(),
-                min_max_freq_range_khz.end()
+                min_max_freq_hz.start() / 1000.,
+                min_max_freq_hz.end() / 1000.
             )));
-        } else if !min_max_freq_range_khz.contains(&stop_freq_khz) {
+        } else if !min_max_freq_hz.contains(&(stop_freq_khz * 1000.)) {
             return Err(Error::InvalidInput(format!(
                 "The stop frequency {} kHz is not within the RF Explorer's frequency range of {}-{} kHz",
                 stop_freq_khz,
-                min_max_freq_range_khz.start(),
-                min_max_freq_range_khz.end()
+                min_max_freq_hz.start() / 1000.,
+                min_max_freq_hz.end() / 1000.
             )));
         }
 
-        if stop_freq_khz - start_freq_khz > self.config.max_span_khz() {
+        let min_max_span_hz = active_model.min_span_hz()..=active_model.max_span_hz();
+        if !min_max_span_hz.contains(&((stop_freq_khz - start_freq_khz) * 1000.)) {
             return Err(Error::InvalidInput(format!(
-                "The span {} kHz must be less than or equal to the RF Explorer's max span {} kHz",
+                "The span {} kHz is not within the RF Explorer's span range of {}-{} kHz",
                 stop_freq_khz - start_freq_khz,
-                self.config.max_span_khz()
+                min_max_span_hz.start() / 1000.,
+                min_max_span_hz.end() / 1000.
             )));
         }
 
