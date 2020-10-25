@@ -39,6 +39,57 @@ impl Model {
             _ => false,
         }
     }
+
+    pub const fn min_freq_hz(&self) -> f64 {
+        match self {
+            Model::Rfe433M => 430_000_000.,
+            Model::Rfe868M => 860_000_000.,
+            Model::Rfe915M => 910_000_000.,
+            Model::RfeWSub1G => 240_000_000.,
+            Model::RfeWSub1GPlus => 50_000.,
+            Model::Rfe24G | Model::Rfe24GPlus => 2_350_000_000.,
+            Model::RfeWSub3G | Model::RfeProAudio => 15_000_000.,
+            Model::Rfe6G => 4_850_000_000.,
+            Model::Rfe4GPlus | Model::Rfe6GPlus => 240_000_000.,
+        }
+    }
+
+    pub const fn max_freq_hz(&self) -> f64 {
+        match self {
+            Model::Rfe433M => 440_000_000.,
+            Model::Rfe868M => 870_000_000.,
+            Model::Rfe915M => 920_000_000.,
+            Model::RfeWSub1G | Model::RfeWSub1GPlus => 960_000_000.,
+            Model::Rfe24G | Model::Rfe24GPlus => 2_550_000_000.,
+            Model::RfeWSub3G | Model::RfeProAudio => 2_700_000_000.,
+            Model::Rfe4GPlus => 4_000_000_000.,
+            Model::Rfe6G | Model::Rfe6GPlus => 6_100_000_000.,
+        }
+    }
+
+    pub const fn min_span_hz(&self) -> f64 {
+        match self {
+            Model::Rfe433M
+            | Model::Rfe868M
+            | Model::Rfe915M
+            | Model::RfeWSub1G
+            | Model::Rfe24G
+            | Model::RfeWSub3G
+            | Model::RfeProAudio => 112_000.,
+            Model::RfeWSub1GPlus => 100_000.,
+            Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000.,
+        }
+    }
+
+    pub const fn max_span_hz(&self) -> f64 {
+        match self {
+            Model::Rfe433M | Model::Rfe868M | Model::Rfe915M => 10_000_000.,
+            Model::RfeWSub1G | Model::Rfe24G => 100_000_000.,
+            Model::Rfe24GPlus => 85_000_000.,
+            Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000.,
+            Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000.,
+        }
+    }
 }
 
 impl FromStr for Model {
