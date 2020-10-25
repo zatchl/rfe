@@ -201,7 +201,8 @@ impl SpectrumAnalyzer {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(command.as_bytes())?;
 
-        self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)
+        self.config = self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        Ok(self.config)
     }
 
     fn validate_start_stop(&self, start_freq_khz: f64, stop_freq_khz: f64) -> Result<()> {
