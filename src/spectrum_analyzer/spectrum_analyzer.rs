@@ -222,14 +222,26 @@ impl SpectrumAnalyzer {
     fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
         // The bottom amplitude must be less than the top amplitude
         if min_amp_dbm >= max_amp_dbm {
-            return Err(Error::InvalidInput("".to_string()));
+            return Err(Error::InvalidInput(
+                "The minimum amplitude must be less than the maximum amplitude".to_string(),
+            ));
         }
 
         // The top and bottom amplitude must be within the RF Explorer's min and max amplitude range
         if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&min_amp_dbm) {
-            return Err(Error::InvalidInput("".to_string()));
+            return Err(Error::InvalidInput(format!(
+                "The amplitude {} dBm is not within the RF Explorer's amplitude range of {}-{} dBm",
+                min_amp_dbm,
+                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.start(),
+                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.end()
+            )));
         } else if !SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.contains(&max_amp_dbm) {
-            return Err(Error::InvalidInput("".to_string()));
+            return Err(Error::InvalidInput(format!(
+                "The amplitude {} dBm is not within the RF Explorer's amplitude range of {}-{} dBm",
+                max_amp_dbm,
+                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.start(),
+                SpectrumAnalyzer::MIN_MAX_AMP_RANGE_DBM.end()
+            )));
         }
 
         Ok(())
