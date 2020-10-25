@@ -188,6 +188,12 @@ pub enum Error {
     #[error("Invalid input: {}", .0)]
     InvalidInput(String),
 
+    #[error("Invalid operation: {}", .0)]
+    InvalidOperation(String),
+
+    #[error("Invalid response: {}", .0)]
+    InvalidResponse(String),
+
     #[error(transparent)]
     Io(#[from] io::Error),
 
