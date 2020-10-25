@@ -2,6 +2,7 @@ use crate::rf_explorer::{Error, Result, RfExplorer, SerialPortReader};
 use crate::spectrum_analyzer::{
     CalcMode, Config, DspMode, ParseSweepError, RadioModule, Setup, Sweep, TrackingStatus,
 };
+use crate::Model;
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
 use std::{
@@ -34,6 +35,25 @@ impl SpectrumAnalyzer {
     const MIN_MAX_AMP_RANGE_DBM: RangeInclusive<i16> = -120..=35;
     const DEFAULT_NEXT_SWEEP_TIMEOUT: Duration = Duration::from_secs(2);
     const DEFAULT_REQUEST_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
+
+    /// Returns the model of the active RF Explorer radio module.
+    pub fn active_model(&self) -> Model {
+        match self.config.active_radio_module() {
+            RadioModule::Main => self.setup.main_model(),
+            RadioModule::Expansion => self
+                .setup
+                .expansion_model()
+                .unwrap_or(self.setup.main_model()),
+        }
+    }
+
+    /// Returns the model of the inactive RF Explorer radio module.
+    pub fn inactive_model(&self) -> Option<Model> {
+        match self.config.active_radio_module() {
+            RadioModule::Main => self.setup.expansion_model(),
+            RadioModule::Expansion => Some(self.setup.main_model()),
+        }
+    }
 
     /// Returns the next sweep measured by the spectrum analyzer.
     pub fn get_sweep(&mut self) -> Result<Sweep> {
