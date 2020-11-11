@@ -1,8 +1,8 @@
-use crate::rf_explorer::SerialNumber;
+use crate::{rf_explorer::SerialNumber, Message};
 use num_enum::IntoPrimitive;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortSettings,
-    StopBits,
+    SerialPortType, StopBits, UsbPortInfo,
 };
 use std::{
     convert::TryFrom,
@@ -12,96 +12,116 @@ use std::{
 };
 use thiserror::Error;
 
-pub trait RfExplorer: for<'a> TryFrom<&'a SerialPortInfo> {
-    type Setup: for<'a> TryFrom<&'a [u8]>;
-    type Config: for<'a> TryFrom<&'a [u8]>;
+const PID: u16 = 60000;
+const VID: u16 = 4292;
+const READ_SETUP_TIMEOUT: Duration = Duration::from_secs(1);
+const DEFAULT_REQUEST_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
+const DEFAULT_REQUEST_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
+const SERIAL_PORT_SETTINGS: SerialPortSettings = SerialPortSettings {
+    baud_rate: 500_000,
+    data_bits: DataBits::Eight,
+    flow_control: FlowControl::None,
+    parity: Parity::None,
+    stop_bits: StopBits::One,
+    timeout: Duration::from_secs(1),
+};
 
-    const SERIAL_PORT_PID: u16 = 60000;
-    const SERIAL_PORT_VID: u16 = 4292;
-    const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
-    const DEFAULT_REQUEST_SERIAL_NUMBER_TIMEOUT: Duration = Duration::from_secs(2);
-    const DEFAULT_REQUEST_CONFIG_TIMEOUT: Duration = Duration::from_secs(2);
-    const SERIAL_PORT_SETTIGNS: SerialPortSettings = SerialPortSettings {
-        baud_rate: 500_000,
-        data_bits: DataBits::Eight,
-        flow_control: FlowControl::None,
-        parity: Parity::None,
-        stop_bits: StopBits::One,
-        timeout: Duration::from_secs(1),
-    };
+pub trait RfExplorer: Sized {
+    type Setup: Message;
+    type Config: Message;
+
+    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self;
 
     fn reader(&mut self) -> &mut SerialPortReader;
 
     fn setup(&self) -> Self::Setup;
 
-    fn wait_for_response<T>(&mut self, timeout: Duration) -> Result<T>
-    where
-        T: for<'a> TryFrom<&'a [u8]>;
+    fn connect(port_info: &SerialPortInfo) -> Result<Self, ConnectionError> {
+        let (port_type, port_name) = (&port_info.port_type, &port_info.port_name);
+        // Check the SerialPortInfo and make sure it's a USB port with the PID and VID of an RF Explorer
+        if let SerialPortType::UsbPort(UsbPortInfo {
+            pid: PID, vid: VID, ..
+        }) = port_type
+        {
+            let mut reader = {
+                let mut port = serialport::open_with_settings(port_name, &SERIAL_PORT_SETTINGS)?;
+                // Request the RF Explorer's config to get the RF Explorer to start sending us bytes
+                write_command(b"C0", &mut port)?;
+                SerialPortReader::new(port)
+            };
 
-    fn write_command(&mut self, command: &[u8]) -> Result<()> {
-        let mut command_buf = vec![
-            b'#',
-            u8::try_from(command.len() + 2).map_err(|_| {
-                Error::InvalidInput("Command must be between 0 and 253 bytes long".to_string())
-            })?,
-        ];
-        command_buf.append(&mut command.to_vec());
-        Ok(self.reader().get_mut().write_all(&command_buf)?)
+            let setup = wait_for_response(&mut reader, READ_SETUP_TIMEOUT)?;
+
+            // Request the RF Explorer's config again in case it was discarded while reading the setup message
+            write_command(b"C0", &mut reader.get_mut())?;
+
+            let config = wait_for_response(&mut reader, DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+
+            return Ok(Self::new(reader, setup, config));
+        }
+
+        return Err(ConnectionError::NotAnRfExplorer);
     }
 
-    fn request_config(&mut self) -> Result<Self::Config> {
-        self.request_config_with_timeout(<Self as RfExplorer>::DEFAULT_REQUEST_CONFIG_TIMEOUT)
+    fn write_command(&mut self, command: &[u8]) -> WriteCommandResult<()> {
+        write_command(command, self.reader().get_mut())
     }
 
-    fn request_config_with_timeout(&mut self, timeout: Duration) -> Result<Self::Config> {
+    fn wait_for_response<T: Message>(&mut self, timeout: Duration) -> ReadMessageResult<T> {
+        wait_for_response(self.reader(), timeout)
+    }
+
+    fn request_config(&mut self) -> RfeResult<Self::Config> {
+        self.request_config_with_timeout(DEFAULT_REQUEST_CONFIG_TIMEOUT)
+    }
+
+    fn request_config_with_timeout(&mut self, timeout: Duration) -> RfeResult<Self::Config> {
         self.reader().get_mut().clear(ClearBuffer::Input)?;
         self.write_command(b"C0")?;
-        self.wait_for_response(timeout)
+        Ok(self.wait_for_response(timeout)?)
     }
 
-    fn request_shutdown(&mut self) -> Result<()> {
+    fn request_shutdown(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"S")
     }
 
-    fn request_hold(&mut self) -> Result<()> {
+    fn request_hold(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"CH")
     }
 
-    fn request_reboot(&mut self) -> Result<()> {
+    fn request_reboot(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"r")
     }
 
-    fn set_baud_rate(&mut self, baud_rate: BaudRate) -> Result<()> {
+    fn set_baud_rate(&mut self, baud_rate: BaudRate) -> WriteCommandResult<()> {
         self.write_command(&[b'c', baud_rate.into()])?;
         Ok(self.reader().get_mut().set_baud_rate(baud_rate.bps())?)
     }
 
-    fn enable_lcd(&mut self) -> Result<()> {
+    fn enable_lcd(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"L1")
     }
 
-    fn disable_lcd(&mut self) -> Result<()> {
+    fn disable_lcd(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"L0")
     }
 
-    fn enable_dump_screen(&mut self) -> Result<()> {
+    fn enable_dump_screen(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"D1")
     }
 
-    fn disable_dump_screen(&mut self) -> Result<()> {
+    fn disable_dump_screen(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"D0")
     }
 
-    fn request_serial_number(&mut self) -> Result<SerialNumber> {
-        self.request_serial_number_with_timeout(
-            <Self as RfExplorer>::DEFAULT_REQUEST_SERIAL_NUMBER_TIMEOUT,
-        )
+    fn request_serial_number(&mut self) -> RfeResult<SerialNumber> {
+        self.request_serial_number_with_timeout(DEFAULT_REQUEST_SERIAL_NUMBER_TIMEOUT)
     }
 
-    fn request_serial_number_with_timeout(&mut self, timeout: Duration) -> Result<SerialNumber> {
+    fn request_serial_number_with_timeout(&mut self, timeout: Duration) -> RfeResult<SerialNumber> {
         self.reader().get_ref().clear(ClearBuffer::Input)?;
         self.write_command(b"Cn")?;
-        self.wait_for_response(timeout)
+        Ok(self.wait_for_response(timeout)?)
     }
 }
 
@@ -137,51 +157,20 @@ impl BaudRate {
 
 pub type SerialPortReader = BufReader<Box<dyn SerialPort>>;
 
-const CONNECTION_TIMEOUT: Duration = Duration::from_secs(3);
+pub(crate) type RfeResult<T> = Result<T, Error>;
 
-pub(crate) fn try_read_setup_and_config<S, C>(
-    serial_port: &mut Box<dyn SerialPort>,
-) -> std::result::Result<(S, C), ConnectionError>
-where
-    S: for<'a> TryFrom<&'a [u8]>,
-    C: for<'a> TryFrom<&'a [u8]>,
-{
-    let mut reader = BufReader::new(serial_port);
+pub(crate) type WriteCommandResult<T> = Result<T, WriteCommandError>;
 
-    // Request a config
-    reader.get_mut().write_all(&[b'#', 4, b'C', b'0'])?;
-
-    let (mut rfe_setup, mut rfe_config) = (None, None);
-    let mut message_buf = Vec::new();
-    let start_time = Instant::now();
-
-    while (rfe_setup.is_none() || rfe_config.is_none())
-        && start_time.elapsed() <= CONNECTION_TIMEOUT
-    {
-        reader.read_until(b'\n', &mut message_buf)?;
-
-        // The last two bytes of each message are \r and \n
-        // Create an RfExplorerSetup or RfExplorerConfig from a slice of bytes without \r\n
-        if let Some(rfe_message) = message_buf.get(0..message_buf.len() - 2) {
-            if let Ok(setup) = S::try_from(rfe_message) {
-                rfe_setup = Some(setup);
-            } else if let Ok(config) = C::try_from(rfe_message) {
-                rfe_config = Some(config);
-            }
-        }
-
-        message_buf.clear();
-    }
-
-    if let (Some(setup), Some(config)) = (rfe_setup, rfe_config) {
-        Ok((setup, config))
-    } else {
-        Err(ConnectionError::ConnectionTimedOut(CONNECTION_TIMEOUT))
-    }
-}
+pub(crate) type ReadMessageResult<T> = Result<T, ReadMessageError>;
 
 #[derive(Error, Debug)]
 pub enum Error {
+    #[error(transparent)]
+    FailedToReadMessage(#[from] ReadMessageError),
+
+    #[error(transparent)]
+    FailedToWriteCommand(#[from] WriteCommandError),
+
     #[error("The attempted operation requires a more recent RF Explorer firmware")]
     IncompatibleFirmwareVersion,
 
@@ -197,17 +186,20 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] io::Error),
 
-    #[error("Failed to receive a response from the RF Explorer within the timeout duration ({} ms)", .0.as_millis())]
-    ResponseTimedOut(Duration),
-
     #[error(transparent)]
     SerialPort(#[from] serialport::Error),
 }
 
 #[derive(Error, Debug)]
 pub enum ConnectionError {
-    #[error("Failed to establish a connection to the RF Explorer within the timeout duration ({} ms)", .0.as_millis())]
-    ConnectionTimedOut(Duration),
+    #[error("Failed to establish a connection to the RF Explorer within the timeout duration")]
+    ConnectionTimedOut,
+
+    #[error(transparent)]
+    FailedToReadMessage(#[from] ReadMessageError),
+
+    #[error(transparent)]
+    FailedToWriteCommand(#[from] WriteCommandError),
 
     #[error(transparent)]
     Io(#[from] io::Error),
@@ -219,82 +211,56 @@ pub enum ConnectionError {
     SerialPort(#[from] serialport::Error),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+#[derive(Error, Debug)]
+pub enum WriteCommandError {
+    #[error(transparent)]
+    Io(#[from] io::Error),
 
-macro_rules! impl_rf_explorer {
-    ($type:ty, $setup:ty, $config:ty) => {
-        impl crate::rf_explorer::RfExplorer for $type {
-            type Setup = $setup;
-            type Config = $config;
+    #[error(transparent)]
+    SerialPort(#[from] serialport::Error),
 
-            fn reader(&mut self) -> &mut crate::rf_explorer::SerialPortReader {
-                &mut self.reader
-            }
+    #[error("Commands must be between 0 and 253 bytes long")]
+    CommandTooLong(#[from] std::num::TryFromIntError),
+}
 
-            fn setup(&self) -> Self::Setup {
-                self.setup.clone()
-            }
+#[derive(Error, Debug)]
+pub enum ReadMessageError {
+    #[error(transparent)]
+    Io(#[from] io::Error),
 
-            fn wait_for_response<T>(
-                &mut self,
-                timeout: std::time::Duration,
-            ) -> crate::rf_explorer::Result<T>
-            where
-                T: for<'a> std::convert::TryFrom<&'a [u8]>,
-            {
-                self.message_buf.clear();
-                let start_time = std::time::Instant::now();
+    #[error(transparent)]
+    SerialPort(#[from] serialport::Error),
 
-                while start_time.elapsed() <= timeout {
-                    std::io::BufRead::read_until(&mut self.reader, b'\n', &mut self.message_buf)?;
+    #[error("Failed to read the message from the RF Explorer within the timeout duration ({} ms)", .0.as_millis())]
+    TimedOut(Duration),
+}
 
-                    // The last two bytes of each message are \r and \n
-                    // Try to create the response from a slice of bytes without \r\n
-                    if let Some(rfe_message) = self.message_buf.get(0..self.message_buf.len() - 2) {
-                        if let Ok(response) = T::try_from(rfe_message) {
-                            return Ok(response);
-                        }
-                    }
+fn write_command(command: &[u8], port: &mut impl io::Write) -> WriteCommandResult<()> {
+    let mut command_buf = vec![b'#', u8::try_from(command.len() + 2)?];
+    command_buf.append(&mut command.to_vec());
+    Ok(port.write_all(&command_buf)?)
+}
 
-                    // The line we read was not the response, so clear the message buffer before reading the next line
-                    self.message_buf.clear();
-                }
+fn wait_for_response<T: Message>(
+    reader: &mut SerialPortReader,
+    timeout: Duration,
+) -> ReadMessageResult<T> {
+    let mut message_buf = Vec::new();
+    let start_time = Instant::now();
 
-                Err(crate::rf_explorer::Error::ResponseTimedOut(timeout))
-            }
+    while start_time.elapsed() <= timeout {
+        // Every message from the RF Explorer ends with \r\n
+        reader.read_until(b'\n', &mut message_buf)?;
+
+        // Return the message if it's succesfully parsed
+        // Continue reading if parsing is incomplete
+        // Clear the message buffer and then continue reading if parsing fails
+        match T::from_bytes(message_buf.as_ref()) {
+            Ok(response) => return Ok(response.1),
+            Err(nom::Err::Incomplete(_)) => continue,
+            _ => message_buf.clear(),
         }
+    }
 
-        impl std::convert::TryFrom<&serialport::SerialPortInfo> for $type {
-            type Error = crate::rf_explorer::ConnectionError;
-
-            fn try_from(
-                serial_port_info: &serialport::SerialPortInfo,
-            ) -> std::result::Result<Self, Self::Error> {
-                // Check the SerialPortInfo and make sure it's a USB port with the PID and VID of an RF Explorer
-                match serial_port_info.port_type {
-                    serialport::SerialPortType::UsbPort(serialport::UsbPortInfo {
-                        pid: <Self as crate::RfExplorer>::SERIAL_PORT_PID,
-                        vid: <Self as crate::RfExplorer>::SERIAL_PORT_VID,
-                        ..
-                    }) => {
-                        let mut serial_port = serialport::open_with_settings(
-                            &serial_port_info.port_name,
-                            &<Self as crate::RfExplorer>::SERIAL_PORT_SETTIGNS,
-                        )?;
-                        let (setup, config) =
-                            crate::rf_explorer::rf_explorer::try_read_setup_and_config(
-                                &mut serial_port,
-                            )?;
-                        Ok(Self {
-                            reader: std::io::BufReader::new(serial_port),
-                            setup,
-                            config,
-                            message_buf: Vec::new(),
-                        })
-                    }
-                    _ => Err(crate::rf_explorer::ConnectionError::NotAnRfExplorer),
-                }
-            }
-        }
-    };
+    Err(ReadMessageError::TimedOut(timeout))
 }

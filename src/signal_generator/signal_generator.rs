@@ -1,6 +1,6 @@
-use crate::rf_explorer::{Result, RfExplorer, SerialPortReader};
-use crate::spectrum_analyzer::{Config, Setup};
-use num_enum::IntoPrimitive;
+use super::{Config, Setup};
+use crate::rf_explorer::{rf_explorer::WriteCommandResult, RfExplorer, SerialPortReader};
+use crate::signal_generator::{Attenuation, PowerLevel};
 use std::fmt::Debug;
 use uom::si::{f64::Frequency, frequency::kilohertz};
 
@@ -8,23 +8,6 @@ pub struct SignalGenerator {
     reader: SerialPortReader,
     setup: Setup,
     config: Config,
-    message_buf: Vec<u8>,
-}
-
-#[derive(Copy, Clone, Debug, IntoPrimitive)]
-#[repr(u8)]
-pub enum Attenuation {
-    On = b'0',
-    Off = b'1',
-}
-
-#[derive(Copy, Clone, Debug, IntoPrimitive)]
-#[repr(u8)]
-pub enum PowerLevel {
-    Lowest = b'0',
-    Low = b'1',
-    High = b'2',
-    Highest = b'3',
 }
 
 impl SignalGenerator {
@@ -33,7 +16,7 @@ impl SignalGenerator {
         cw_freq: Frequency,
         attenuation: Attenuation,
         power_level: PowerLevel,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C3-F:{:07.0},{},{}",
             cw_freq.get::<kilohertz>(),
@@ -43,7 +26,7 @@ impl SignalGenerator {
         self.write_command(command.as_bytes())
     }
 
-    pub fn start_cw_exp(&mut self, cw_freq: Frequency, power_dbm: f64) -> Result<()> {
+    pub fn start_cw_exp(&mut self, cw_freq: Frequency, power_dbm: f64) -> WriteCommandResult<()> {
         let command = format!(
             "C5-F:{:07.0},{:+05.1}",
             cw_freq.get::<kilohertz>(),
@@ -60,7 +43,7 @@ impl SignalGenerator {
         sweep_steps: u16,
         freq_step: Frequency,
         step_delay_ms: u32,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C3-F:{:07.0},{},{},{:04},{:07.0},{:05}",
             start_freq.get::<kilohertz>(),
@@ -80,7 +63,7 @@ impl SignalGenerator {
         sweep_steps: u16,
         freq_step: Frequency,
         step_delay_ms: u32,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C5-F:{:07.0},{:+05.1},{:04},{:07.0},{:05}",
             start_freq.get::<kilohertz>(),
@@ -99,7 +82,7 @@ impl SignalGenerator {
         power_level: PowerLevel,
         sweep_steps: u16,
         freq_step: Frequency,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C3-T:{:07.0},{},{},{:04},{:07.0}",
             start_freq.get::<kilohertz>(),
@@ -117,7 +100,7 @@ impl SignalGenerator {
         power_dbm: f64,
         sweep_steps: u16,
         freq_step: Frequency,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C5-T:{:07.0},{:+05.1},{:04},{:07.0}",
             start_freq.get::<kilohertz>(),
@@ -136,7 +119,7 @@ impl SignalGenerator {
         end_attenuation: Attenuation,
         end_power: PowerLevel,
         step_delay_ms: u32,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C3-A:{:07.0},{},{},{},{},{:05}",
             cw_freq.get::<kilohertz>(),
@@ -156,7 +139,7 @@ impl SignalGenerator {
         step_power_db: f64,
         stop_power_dbm: f64,
         step_delay_ms: u32,
-    ) -> Result<()> {
+    ) -> WriteCommandResult<()> {
         let command = format!(
             "C5-A:{:07.0},{:+05.1},{:+05.1},{:05.1},{:05}",
             cw_freq.get::<kilohertz>(),
@@ -168,21 +151,40 @@ impl SignalGenerator {
         self.write_command(command.as_bytes())
     }
 
-    pub fn enable_rf_power(&mut self) -> Result<()> {
+    pub fn enable_rf_power(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"CP1")
     }
 
-    pub fn disable_rf_power(&mut self) -> Result<()> {
+    pub fn disable_rf_power(&mut self) -> WriteCommandResult<()> {
         self.write_command(b"CP0")
     }
 
-    pub fn set_tracking_steps(&mut self, tracking_steps: u16) -> Result<()> {
+    pub fn set_tracking_steps(&mut self, tracking_steps: u16) -> WriteCommandResult<()> {
         let step_bytes = tracking_steps.to_be_bytes();
         self.write_command(&[b'k', step_bytes[0], step_bytes[1]])
     }
 }
 
-impl_rf_explorer!(SignalGenerator, Setup, Config);
+impl RfExplorer for SignalGenerator {
+    type Setup = super::Setup;
+    type Config = super::Config;
+
+    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self {
+        SignalGenerator {
+            reader,
+            setup,
+            config,
+        }
+    }
+
+    fn reader(&mut self) -> &mut SerialPortReader {
+        &mut self.reader
+    }
+
+    fn setup(&self) -> Self::Setup {
+        self.setup.clone()
+    }
+}
 
 impl Debug for SignalGenerator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

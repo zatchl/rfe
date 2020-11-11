@@ -1,6 +1,15 @@
+use crate::rf_explorer::Message;
 use chrono::{DateTime, Utc};
-use std::{cmp::Ordering, convert::TryFrom};
-use thiserror::Error;
+use nom::{
+    branch::alt,
+    bytes::complete::tag,
+    character::complete::line_ending,
+    combinator::{all_consuming, map, opt},
+    error::{Error, ErrorKind},
+    multi::length_data,
+    number::complete::{be_u16, u8 as nom_u8},
+    IResult,
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sweep {
@@ -8,87 +17,46 @@ pub struct Sweep {
     timestamp: DateTime<Utc>,
 }
 
-#[derive(Error, Debug, Eq, PartialEq)]
-pub enum ParseSweepError {
-    #[error("Invalid RfExplorerSweep")]
-    InvalidFormatError,
-
-    #[error("Fewer amplitudes than expected. Expected {expected} but received {actual}.")]
-    TooFewAmplitudes { expected: usize, actual: usize },
-
-    #[error("More amplitudes than expected. Expected {expected} but received {actual}.")]
-    TooManyAmplitudes { expected: usize, actual: usize },
-}
-
-type Result<T> = std::result::Result<T, ParseSweepError>;
-
-fn amplitudes_from_bytes(bytes: &[u8]) -> Vec<f32> {
-    // Divide each byte by -2 to get each amplitude in dBm
-    bytes.iter().map(|&byte| f32::from(byte) / -2.0).collect()
-}
-
-fn parse_sweep_data_len(bytes: &[u8]) -> Result<usize> {
-    Ok(usize::from(
-        *bytes
-            .get(2)
-            .ok_or_else(|| ParseSweepError::InvalidFormatError)?,
-    ))
-}
-
-fn parse_sweep_data_ext_len(bytes: &[u8]) -> Result<usize> {
-    Ok((usize::from(
-        *bytes
-            .get(2)
-            .ok_or_else(|| ParseSweepError::InvalidFormatError)?,
-    ) + 1)
-        * 16)
-}
-
-fn parse_sweep_data_large_len(bytes: &[u8]) -> Result<usize> {
-    Ok(usize::from(u16::from_be_bytes([
-        *bytes
-            .get(2)
-            .ok_or_else(|| ParseSweepError::InvalidFormatError)?,
-        *bytes
-            .get(3)
-            .ok_or_else(|| ParseSweepError::InvalidFormatError)?,
-    ])))
-}
-
 impl Sweep {
-    fn new(amp_bytes: Option<&[u8]>, expected_len: usize) -> Result<Sweep> {
-        let amp_bytes = amp_bytes.ok_or_else(|| ParseSweepError::InvalidFormatError)?;
-        match amp_bytes.len().cmp(&expected_len) {
-            Ordering::Equal => Ok(Sweep {
-                amplitudes_dbm: amplitudes_from_bytes(amp_bytes),
-                timestamp: Utc::now(),
-            }),
-            Ordering::Less => Err(ParseSweepError::TooFewAmplitudes {
-                expected: expected_len,
-                actual: amp_bytes.len(),
-            }),
-            Ordering::Greater => Err(ParseSweepError::TooManyAmplitudes {
-                expected: expected_len,
-                actual: amp_bytes.len(),
-            }),
-        }
+    pub fn amplitudes_dbm(&self) -> &[f32] {
+        self.amplitudes_dbm.as_slice()
     }
 
-    pub fn amplitudes_dbm(&self) -> &[f32] {
-        &self.amplitudes_dbm
+    pub fn timestamp(&self) -> DateTime<Utc> {
+        self.timestamp
     }
 }
 
-impl TryFrom<&[u8]> for Sweep {
-    type Error = ParseSweepError;
+impl Message for Sweep {
+    // It's possible that this function will be called with fewer amplitudes than specified by the
+    // length field. When that happens, length_data() will return nom::Err::Incomplete.
+    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+        // Parse the prefix of the message
+        let (bytes, prefix) = alt((tag("$S"), tag("$s"), tag("$z")))(bytes)?;
 
-    fn try_from(bytes: &[u8]) -> Result<Self> {
-        match bytes.get(0..2) {
-            Some(b"$S") => Sweep::new(bytes.get(3..), parse_sweep_data_len(bytes)?),
-            Some(b"$s") => Sweep::new(bytes.get(3..), parse_sweep_data_ext_len(bytes)?),
-            Some(b"$z") => Sweep::new(bytes.get(4..), parse_sweep_data_large_len(bytes)?),
-            _ => Err(ParseSweepError::InvalidFormatError),
-        }
+        // Use the prefix to determine how to interpret the length field
+        // Pass the length field parser (nom_u8 or be_u16) to length_data() to get a subslice
+        // containing the amplitudes
+        let (bytes, amps) = match prefix {
+            b"$S" => length_data(nom_u8)(bytes)?,
+            b"$s" => length_data(map(nom_u8, |len| (usize::from(len) + 1) * 16))(bytes)?,
+            b"$z" => length_data(be_u16)(bytes)?,
+            _ => return Err(nom::Err::Failure(Error::new(bytes, ErrorKind::Tag))),
+        };
+
+        // Convert the amplitude bytes into dBm by dividing them by -2
+        let amplitudes_dbm = amps.iter().map(|&byte| f32::from(byte) / -2.).collect();
+
+        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+
+        Ok((
+            bytes,
+            Sweep {
+                amplitudes_dbm,
+                timestamp: Utc::now(),
+            },
+        ))
     }
 }
 
@@ -108,7 +76,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep = Sweep::try_from(&bytes[..]).unwrap();
+        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep.amplitudes_dbm(),
             &[
@@ -138,7 +106,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep = Sweep::try_from(&bytes[..]).unwrap();
+        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep.amplitudes_dbm(),
             &[
@@ -168,7 +136,7 @@ mod tests {
             175, 179, 36, 21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227,
             20, 92, 6, 229, 120, 125, 239,
         ];
-        let sweep = Sweep::try_from(&bytes[..]).unwrap();
+        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
             sweep.amplitudes_dbm(),
             &[
@@ -198,8 +166,8 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239, 100,
         ];
-        let sweep = Sweep::try_from(&bytes[..]);
-        assert!(matches!(sweep.unwrap_err(), ParseSweepError::TooManyAmplitudes{..}));
+        let sweep_error = Sweep::from_bytes(&bytes[..]).unwrap_err();
+        assert!(matches!(sweep_error, nom::Err::Error(..)));
     }
 
     #[test]
@@ -214,7 +182,7 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125,
         ];
-        let sweep_error = Sweep::try_from(&bytes[..]).unwrap_err();
-        assert!(matches!(sweep_error, ParseSweepError::TooFewAmplitudes{..}));
+        let sweep_error = Sweep::from_bytes(&bytes[..]).unwrap_err();
+        assert!(matches!(sweep_error, nom::Err::Incomplete(..)));
     }
 }

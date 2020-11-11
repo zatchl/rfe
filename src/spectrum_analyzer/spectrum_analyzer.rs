@@ -1,13 +1,14 @@
-use crate::rf_explorer::{Error, Result, RfExplorer, SerialPortReader};
+use crate::rf_explorer::{
+    rf_explorer::{ReadMessageResult, RfeResult, WriteCommandResult},
+    Error, RfExplorer, SerialPortReader,
+};
 use crate::spectrum_analyzer::{
-    CalcMode, Config, DspMode, ParseSweepError, RadioModule, Setup, Sweep, TrackingStatus,
+    CalcMode, Config, DspMode, RadioModule, Setup, Sweep, TrackingStatus,
 };
 use crate::Model;
 use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
-use std::{
-    convert::TryFrom, fmt::Debug, io::BufRead, ops::RangeInclusive, time::Duration, time::Instant,
-};
+use std::{fmt::Debug, ops::RangeInclusive, time::Duration};
 use uom::si::{
     f64::Frequency,
     frequency::{kilohertz, megahertz},
@@ -17,7 +18,6 @@ pub struct SpectrumAnalyzer {
     reader: SerialPortReader,
     setup: Setup,
     config: Config,
-    message_buf: Vec<u8>,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
@@ -60,46 +60,24 @@ impl SpectrumAnalyzer {
     }
 
     /// Returns the next sweep measured by the spectrum analyzer.
-    pub fn get_sweep(&mut self) -> Result<Sweep> {
+    pub fn get_sweep(&mut self) -> ReadMessageResult<Sweep> {
         self.get_sweep_with_timeout(SpectrumAnalyzer::DEFAULT_NEXT_SWEEP_TIMEOUT)
     }
 
     /// Returns the next sweep measured by the spectrum analyzer.
-    pub fn get_sweep_with_timeout(&mut self, timeout: Duration) -> Result<Sweep> {
+    pub fn get_sweep_with_timeout(&mut self, timeout: Duration) -> ReadMessageResult<Sweep> {
         // Before reading the next sweep, we should clear the serial port's input buffer
         // This will prevent us from reading a stale sweep
         self.reader.get_ref().clear(ClearBuffer::Input)?;
 
-        self.message_buf.clear();
-        let start_time = Instant::now();
-
-        while start_time.elapsed() <= timeout {
-            self.reader.read_until(b'\n', &mut self.message_buf)?;
-
-            // It's possible that the byte '\n' could be used to represent an amplitude (-5 dBm)
-            // This would result in an invalid sweep with fewer amplitudes than indicated by the length field
-            // If parsing the bytes fails with ParseSweepError::TooFewAmplitudes, do not clear the message buffer
-            // This will give us another chance to find the real end of the sweep because read_until() appends to the message buffer
-            if let Some(rfe_message) = self.message_buf.get(0..self.message_buf.len() - 2) {
-                match Sweep::try_from(rfe_message) {
-                    Ok(sweep) => return Ok(sweep),
-                    Err(ParseSweepError::TooFewAmplitudes { .. }) => continue,
-                    Err(_) => (),
-                }
-            }
-
-            // The line we read was not a sweep, so clear the message buffer before reading the next line
-            self.message_buf.clear();
-        }
-
-        Err(Error::ResponseTimedOut(timeout))
+        Ok(self.wait_for_response(timeout)?)
     }
 
     pub fn set_start_stop(
         &mut self,
         start_freq: Frequency,
         stop_freq: Frequency,
-    ) -> Result<Config> {
+    ) -> RfeResult<Config> {
         self.set_config(
             start_freq,
             stop_freq,
@@ -108,12 +86,16 @@ impl SpectrumAnalyzer {
         )
     }
 
-    pub fn set_center_span(&mut self, center_freq: Frequency, span: Frequency) -> Result<Config> {
+    pub fn set_center_span(
+        &mut self,
+        center_freq: Frequency,
+        span: Frequency,
+    ) -> RfeResult<Config> {
         self.set_start_stop(center_freq - span / 2., center_freq + span / 2.)
     }
 
     /// Sets the minimum and maximum amplitudes displayed on the RF Explorer's screen.
-    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<Config> {
+    pub fn set_min_max_amps(&mut self, min_amp_dbm: i16, max_amp_dbm: i16) -> RfeResult<Config> {
         self.set_config(
             self.config.start_freq(),
             self.config.stop_freq(),
@@ -122,27 +104,27 @@ impl SpectrumAnalyzer {
         )
     }
 
-    pub fn switch_module_main(&mut self) -> Result<()> {
+    pub fn switch_module_main(&mut self) -> RfeResult<()> {
         self.write_command(&[b'C', b'M', 0])?;
         self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
         Ok(())
     }
 
-    pub fn switch_module_expansion(&mut self) -> Result<()> {
+    pub fn switch_module_expansion(&mut self) -> RfeResult<()> {
         self.write_command(&[b'C', b'M', 1])?;
         self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
         Ok(())
     }
 
-    pub fn start_wifi_analyzer(&mut self, wifi_band: WifiBand) -> Result<()> {
+    pub fn start_wifi_analyzer(&mut self, wifi_band: WifiBand) -> WriteCommandResult<()> {
         self.write_command(&[b'C', b'W', wifi_band.into()])
     }
 
-    pub fn stop_wifi_analyzer(&mut self) -> Result<()> {
+    pub fn stop_wifi_analyzer(&mut self) -> WriteCommandResult<()> {
         self.write_command(&[b'C', b'W', 0])
     }
 
-    pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> Result<()> {
+    pub fn set_calc_mode(&mut self, calc_mode: CalcMode) -> WriteCommandResult<()> {
         self.write_command(&[b'C', b'+', calc_mode.into()])
     }
 
@@ -150,7 +132,7 @@ impl SpectrumAnalyzer {
         &mut self,
         start_freq: Frequency,
         freq_step: Frequency,
-    ) -> Result<TrackingStatus> {
+    ) -> RfeResult<TrackingStatus> {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         let command = format!(
             "C3-K:{:07.0},{:07.0}",
@@ -159,30 +141,30 @@ impl SpectrumAnalyzer {
         );
         self.write_command(command.as_bytes())?;
 
-        self.wait_for_response(Duration::from_secs(3))
+        Ok(self.wait_for_response(Duration::from_secs(3))?)
     }
 
-    pub fn tracking_step(&mut self, step: u16) -> Result<()> {
+    pub fn tracking_step(&mut self, step: u16) -> WriteCommandResult<()> {
         let step_bytes = step.to_be_bytes();
         self.write_command(&[b'k', step_bytes[0], step_bytes[1]])
     }
 
-    pub fn set_dsp(&mut self, dsp_mode: DspMode) -> Result<DspMode> {
+    pub fn set_dsp(&mut self, dsp_mode: DspMode) -> RfeResult<DspMode> {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(&[b'C', b'p', dsp_mode.into()])?;
 
-        self.wait_for_response(Duration::from_secs(1))
+        Ok(self.wait_for_response(Duration::from_secs(1))?)
     }
 
-    pub fn set_offset_db(&mut self, offset_db: i8) -> Result<()> {
+    pub fn set_offset_db(&mut self, offset_db: i8) -> WriteCommandResult<()> {
         self.write_command(&[b'C', b'O', offset_db as u8])
     }
 
-    pub fn set_input_stage(&mut self, input_stage: InputStage) -> Result<()> {
+    pub fn set_input_stage(&mut self, input_stage: InputStage) -> WriteCommandResult<()> {
         self.write_command(&[b'a', input_stage.into()])
     }
 
-    pub fn set_sweep_points(&mut self, sweep_points: u16) -> Result<()> {
+    pub fn set_sweep_points(&mut self, sweep_points: u16) -> WriteCommandResult<()> {
         if sweep_points <= 4096 {
             self.write_command(&[b'C', b'J', ((sweep_points / 16) - 1) as u8])
         } else {
@@ -197,7 +179,7 @@ impl SpectrumAnalyzer {
         stop_freq: Frequency,
         min_amp_dbm: i16,
         max_amp_dbm: i16,
-    ) -> Result<Config> {
+    ) -> RfeResult<Config> {
         self.validate_start_stop(start_freq, stop_freq)?;
         self.validate_min_max_amps(min_amp_dbm, max_amp_dbm)?;
 
@@ -217,7 +199,7 @@ impl SpectrumAnalyzer {
         Ok(self.config)
     }
 
-    fn validate_start_stop(&self, start_freq: Frequency, stop_freq: Frequency) -> Result<()> {
+    fn validate_start_stop(&self, start_freq: Frequency, stop_freq: Frequency) -> RfeResult<()> {
         if start_freq >= stop_freq {
             return Err(Error::InvalidInput(
                 "The start frequency must be less than the stop frequency".to_string(),
@@ -256,7 +238,7 @@ impl SpectrumAnalyzer {
         Ok(())
     }
 
-    fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> Result<()> {
+    fn validate_min_max_amps(&self, min_amp_dbm: i16, max_amp_dbm: i16) -> RfeResult<()> {
         // The bottom amplitude must be less than the top amplitude
         if min_amp_dbm >= max_amp_dbm {
             return Err(Error::InvalidInput(
@@ -285,7 +267,27 @@ impl SpectrumAnalyzer {
     }
 }
 
-impl_rf_explorer!(SpectrumAnalyzer, Setup, Config);
+impl RfExplorer for SpectrumAnalyzer {
+    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self {
+        SpectrumAnalyzer {
+            reader,
+            setup,
+            config,
+        }
+    }
+
+    fn reader(&mut self) -> &mut SerialPortReader {
+        &mut self.reader
+    }
+
+    fn setup(&self) -> Self::Setup {
+        self.setup.clone()
+    }
+
+    type Setup = crate::spectrum_analyzer::Setup;
+
+    type Config = crate::spectrum_analyzer::Config;
+}
 
 impl Debug for SpectrumAnalyzer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

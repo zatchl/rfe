@@ -1,6 +1,9 @@
-use crate::rf_explorer::ParseMessageError;
 use num_enum::TryFromPrimitive;
-use std::{convert::TryFrom, fmt::Display, str, str::FromStr};
+use std::{
+    convert::TryFrom,
+    fmt::Display,
+    str::{self, FromStr},
+};
 use uom::si::{f64::Frequency, frequency::hertz};
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
@@ -18,6 +21,7 @@ pub enum Model {
     Rfe24GPlus = 12,
     Rfe4GPlus = 13,
     Rfe6GPlus = 14,
+    RfeGen = 60,
 }
 
 impl Model {
@@ -52,6 +56,7 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 15_000_000.,
             Model::Rfe6G => 4_850_000_000.,
             Model::Rfe4GPlus | Model::Rfe6GPlus => 240_000_000.,
+            Model::RfeGen => 24_000_000.,
         })
     }
 
@@ -65,6 +70,7 @@ impl Model {
             Model::RfeWSub3G | Model::RfeProAudio => 2_700_000_000.,
             Model::Rfe4GPlus => 4_000_000_000.,
             Model::Rfe6G | Model::Rfe6GPlus => 6_100_000_000.,
+            Model::RfeGen => 6_000_000_000.,
         })
     }
 
@@ -79,6 +85,7 @@ impl Model {
             | Model::RfeProAudio => 112_000.,
             Model::RfeWSub1GPlus => 100_000.,
             Model::Rfe24GPlus | Model::Rfe4GPlus | Model::Rfe6G | Model::Rfe6GPlus => 2_000_000.,
+            Model::RfeGen => 1_000_000.,
         })
     }
 
@@ -89,15 +96,16 @@ impl Model {
             Model::Rfe24GPlus => 85_000_000.,
             Model::RfeWSub3G | Model::RfeProAudio | Model::Rfe6G => 600_000_000.,
             Model::RfeWSub1GPlus | Model::Rfe4GPlus | Model::Rfe6GPlus => 960_000_000.,
+            Model::RfeGen => 1_000_000_000.,
         })
     }
 }
 
 impl FromStr for Model {
-    type Err = ParseMessageError;
+    type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s)?).map_err(|_| ParseMessageError::InvalidData)
+        Model::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
     }
 }
 
@@ -116,6 +124,7 @@ impl Display for Model {
             Model::Rfe24GPlus => write!(f, "2.4G+"),
             Model::Rfe4GPlus => write!(f, "4G+"),
             Model::Rfe6GPlus => write!(f, "6G+"),
+            Model::RfeGen => write!(f, "RFEGen"),
         }
     }
 }
