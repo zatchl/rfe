@@ -7,6 +7,7 @@ mod signal_generator;
 mod temperature;
 
 pub use config::Config;
+pub use config_cw::ConfigCw;
 pub use setup::Setup;
 pub use signal_generator::SignalGenerator;
 pub use temperature::Temperature;
