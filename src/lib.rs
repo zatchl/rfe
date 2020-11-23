@@ -10,6 +10,22 @@ pub use uom;
 
 use serialport;
 
+/// Returns the first RF Explorer signal generator connected to the machine.
+pub fn first_signal_generator() -> Option<SignalGenerator> {
+    serialport::available_ports()
+        .unwrap_or_default()
+        .iter()
+        .find_map(|port_info| SignalGenerator::connect(port_info).ok())
+}
+
+/// Returns the first RF Explorer spectrum analyzer connected to the machine.
+pub fn first_spectrum_analyzer() -> Option<SpectrumAnalyzer> {
+    serialport::available_ports()
+        .unwrap_or_default()
+        .iter()
+        .find_map(|port_info| SpectrumAnalyzer::connect(port_info).ok())
+}
+
 /// Returns every RF Explorer signal generator connected to the machine.
 pub fn signal_generators() -> Vec<SignalGenerator> {
     serialport::available_ports()
