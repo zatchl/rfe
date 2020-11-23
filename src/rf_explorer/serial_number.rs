@@ -50,6 +50,7 @@ mod tests {
 
     #[test]
     fn accept_valid_serial_number() {
-        assert!(SerialNumber::from_bytes(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok())
+        assert!(SerialNumber::from_bytes(b"#Sn0SME38SI2X7NGR48".as_ref()).is_ok());
+        assert!(SerialNumber::from_bytes(b"#SnB3AK7AL7CACAA74M\r\n".as_ref()).is_ok());
     }
 }
