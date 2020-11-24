@@ -8,6 +8,7 @@ mod temperature;
 
 pub use config::Config;
 pub use config_cw::ConfigCw;
+pub use config_freq_sweep::ConfigFreqSweep;
 pub use setup::Setup;
 pub use signal_generator::SignalGenerator;
 pub use temperature::Temperature;
