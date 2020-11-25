@@ -10,6 +10,7 @@ use nom::{
     number::complete::{be_u16, u8 as nom_u8},
     IResult,
 };
+use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Sweep {
@@ -57,6 +58,21 @@ impl Message for Sweep {
                 timestamp: Utc::now(),
             },
         ))
+    }
+}
+
+impl Add for Sweep {
+    type Output = Sweep;
+
+    fn add(mut self, mut rhs: Self) -> Self::Output {
+        self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
+        self
+    }
+}
+
+impl AddAssign for Sweep {
+    fn add_assign(&mut self, mut rhs: Self) {
+        self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
     }
 }
 
@@ -184,5 +200,42 @@ mod tests {
         ];
         let sweep_error = Sweep::from_bytes(&bytes[..]).unwrap_err();
         assert!(matches!(sweep_error, nom::Err::Incomplete(..)));
+    }
+
+    #[test]
+    fn add_sweeps() {
+        let sweep1 = Sweep {
+            amplitudes_dbm: vec![-120., -110.],
+            timestamp: Utc::now(),
+        };
+
+        let sweep2 = Sweep {
+            amplitudes_dbm: vec![-100., -90.],
+            timestamp: Utc::now(),
+        };
+
+        let sweep3 = Sweep {
+            amplitudes_dbm: vec![-80., -70.],
+            timestamp: Utc::now(),
+        };
+
+        let sweep = sweep1 + sweep2 + sweep3;
+
+        assert_eq!(
+            sweep.amplitudes_dbm(),
+            &[-120., -110., -100., -90., -80., -70.]
+        );
+    }
+
+    #[test]
+    fn add_assign_sweeps() {
+        let mut sweep = Sweep {
+            amplitudes_dbm: vec![-120., -110.],
+            timestamp: Utc::now(),
+        };
+
+        sweep += sweep.clone();
+
+        assert_eq!(sweep.amplitudes_dbm(), &[-120., -110., -120., -110.]);
     }
 }
