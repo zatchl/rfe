@@ -1,4 +1,7 @@
-use crate::rf_explorer::Message;
+use crate::{
+    rf_explorer::Message,
+    spectrum_analyzer::{CalcMode, Mode, RadioModule},
+};
 use nom::{
     branch::alt,
     bytes::complete::{tag, take},
@@ -6,8 +9,6 @@ use nom::{
     combinator::{all_consuming, map_res, opt},
     IResult,
 };
-use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::convert::TryFrom;
 use std::str::{self, FromStr};
 use uom::si::{
     f64::Frequency,
@@ -29,38 +30,6 @@ pub struct Config {
     rbw_khz: Option<f64>,
     amp_offset_db: Option<i16>,
     calculator_mode: Option<CalcMode>,
-}
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
-#[repr(u8)]
-pub enum RadioModule {
-    Main = 0,
-    Expansion,
-}
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
-#[repr(u8)]
-pub enum Mode {
-    SpectrumAnalyzer = 0,
-    RfGenerator = 1,
-    WifiAnalyzer = 2,
-    AnalyzerTracking = 5,
-    RfSniffer = 6,
-    CwTransmitter = 60,
-    SweepFrequency = 61,
-    SweepAmplitude = 62,
-    GeneratorTracking = 63,
-    Unknown = 255,
-}
-
-#[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq)]
-#[repr(u8)]
-pub enum CalcMode {
-    Normal = 0,
-    Max,
-    Avg,
-    Overwrite,
-    MaxHold,
 }
 
 impl Config {
@@ -231,30 +200,6 @@ impl Message for Config {
                 calculator_mode,
             },
         ))
-    }
-}
-
-impl FromStr for RadioModule {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
-    }
-}
-
-impl FromStr for Mode {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
-    }
-}
-
-impl FromStr for CalcMode {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
     }
 }
 
