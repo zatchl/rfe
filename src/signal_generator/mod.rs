@@ -7,6 +7,7 @@ mod signal_generator;
 mod temperature;
 
 pub use config::Config;
+pub use config_amp_sweep::ConfigAmpSweep;
 pub use config_cw::ConfigCw;
 pub use config_freq_sweep::ConfigFreqSweep;
 pub use setup::Setup;
