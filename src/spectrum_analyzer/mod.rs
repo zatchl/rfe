@@ -8,12 +8,27 @@ mod tracking_status;
 pub use config::Config;
 pub use dsp_mode::DspMode;
 pub use setup::Setup;
-pub use spectrum_analyzer::{InputStage, SpectrumAnalyzer, WifiBand};
+pub use spectrum_analyzer::SpectrumAnalyzer;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::{convert::TryFrom, str::FromStr};
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
+#[repr(u8)]
+pub enum InputStage {
+    Bypass = b'0',
+    Attenuator30dB = b'1',
+    Lna25dB = b'2',
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
+#[repr(u8)]
+pub enum WifiBand {
+    TwoPointFourGhz = 1,
+    FiveGhz,
+}
 
 #[derive(Debug, Copy, Clone, TryFromPrimitive, Eq, PartialEq)]
 #[repr(u8)]

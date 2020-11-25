@@ -3,10 +3,9 @@ use crate::rf_explorer::{
     Error, RfExplorer, SerialPortReader,
 };
 use crate::spectrum_analyzer::{
-    CalcMode, Config, DspMode, RadioModule, Setup, Sweep, TrackingStatus,
+    CalcMode, Config, DspMode, InputStage, RadioModule, Setup, Sweep, TrackingStatus, WifiBand,
 };
 use crate::Model;
-use num_enum::IntoPrimitive;
 use serialport::ClearBuffer;
 use std::{fmt::Debug, ops::RangeInclusive, time::Duration};
 use uom::si::{
@@ -18,21 +17,6 @@ pub struct SpectrumAnalyzer {
     reader: SerialPortReader,
     setup: Setup,
     config: Config,
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
-#[repr(u8)]
-pub enum InputStage {
-    Bypass = b'0',
-    Attenuator30dB = b'1',
-    Lna25dB = b'2',
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
-#[repr(u8)]
-pub enum WifiBand {
-    TwoPointFourGhz = 1,
-    FiveGhz,
 }
 
 impl SpectrumAnalyzer {
