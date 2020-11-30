@@ -50,12 +50,12 @@ pub trait RfExplorer: Sized {
                 SerialPortReader::new(port)
             };
 
-            let setup = wait_for_response(&mut reader, READ_SETUP_TIMEOUT)?;
+            let setup = read_message(&mut reader, READ_SETUP_TIMEOUT)?;
 
             // Request the RF Explorer's config again in case it was discarded while reading the setup message
             write_command(b"C0", &mut reader.get_mut())?;
 
-            let config = wait_for_response(&mut reader, DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+            let config = read_message(&mut reader, DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
 
             return Ok(Self::new(reader, setup, config));
         }
@@ -67,8 +67,8 @@ pub trait RfExplorer: Sized {
         write_command(command, self.reader().get_mut())
     }
 
-    fn wait_for_response<T: Message>(&mut self, timeout: Duration) -> ReadMessageResult<T> {
-        wait_for_response(self.reader(), timeout)
+    fn read_message<T: Message>(&mut self, timeout: Duration) -> ReadMessageResult<T> {
+        read_message(self.reader(), timeout)
     }
 
     fn request_config(&mut self) -> RfeResult<Self::Config> {
@@ -78,7 +78,7 @@ pub trait RfExplorer: Sized {
     fn request_config_with_timeout(&mut self, timeout: Duration) -> RfeResult<Self::Config> {
         self.reader().get_mut().clear(ClearBuffer::Input)?;
         self.write_command(b"C0")?;
-        Ok(self.wait_for_response(timeout)?)
+        Ok(self.read_message(timeout)?)
     }
 
     fn request_shutdown(&mut self) -> WriteCommandResult<()> {
@@ -121,7 +121,7 @@ pub trait RfExplorer: Sized {
     fn request_serial_number_with_timeout(&mut self, timeout: Duration) -> RfeResult<SerialNumber> {
         self.reader().get_ref().clear(ClearBuffer::Input)?;
         self.write_command(b"Cn")?;
-        Ok(self.wait_for_response(timeout)?)
+        Ok(self.read_message(timeout)?)
     }
 }
 
@@ -241,7 +241,7 @@ fn write_command(command: &[u8], port: &mut impl io::Write) -> WriteCommandResul
     Ok(port.write_all(&command_buf)?)
 }
 
-fn wait_for_response<T: Message>(
+fn read_message<T: Message>(
     reader: &mut SerialPortReader,
     timeout: Duration,
 ) -> ReadMessageResult<T> {

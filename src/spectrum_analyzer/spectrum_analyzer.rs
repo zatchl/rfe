@@ -54,7 +54,7 @@ impl SpectrumAnalyzer {
         // This will prevent us from reading a stale sweep
         self.reader.get_ref().clear(ClearBuffer::Input)?;
 
-        Ok(self.wait_for_response(timeout)?)
+        Ok(self.read_message(timeout)?)
     }
 
     pub fn set_start_stop(
@@ -90,13 +90,13 @@ impl SpectrumAnalyzer {
 
     pub fn switch_module_main(&mut self) -> RfeResult<()> {
         self.write_command(&[b'C', b'M', 0])?;
-        self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        self.config = self.read_message(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
         Ok(())
     }
 
     pub fn switch_module_expansion(&mut self) -> RfeResult<()> {
         self.write_command(&[b'C', b'M', 1])?;
-        self.config = self.wait_for_response(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        self.config = self.read_message(Self::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
         Ok(())
     }
 
@@ -125,7 +125,7 @@ impl SpectrumAnalyzer {
         );
         self.write_command(command.as_bytes())?;
 
-        Ok(self.wait_for_response(Duration::from_secs(3))?)
+        Ok(self.read_message(Duration::from_secs(3))?)
     }
 
     pub fn tracking_step(&mut self, step: u16) -> WriteCommandResult<()> {
@@ -137,7 +137,7 @@ impl SpectrumAnalyzer {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(&[b'C', b'p', dsp_mode.into()])?;
 
-        Ok(self.wait_for_response(Duration::from_secs(1))?)
+        Ok(self.read_message(Duration::from_secs(1))?)
     }
 
     pub fn set_offset_db(&mut self, offset_db: i8) -> WriteCommandResult<()> {
@@ -179,7 +179,7 @@ impl SpectrumAnalyzer {
         self.reader.get_ref().clear(ClearBuffer::Input)?;
         self.write_command(command.as_bytes())?;
 
-        self.config = self.wait_for_response(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
+        self.config = self.read_message(SpectrumAnalyzer::DEFAULT_REQUEST_CONFIG_TIMEOUT)?;
         Ok(self.config)
     }
 
