@@ -1,4 +1,4 @@
-use crate::rf_explorer::Message;
+use crate::rf_explorer::{Message, ParseFromBytes};
 use nom::{
     bytes::complete::tag,
     character::complete::line_ending,
@@ -7,8 +7,7 @@ use nom::{
     IResult,
 };
 use num_enum::TryFromPrimitive;
-use std::convert::TryFrom;
-use std::ops::RangeInclusive;
+use std::{convert::TryFrom, ops::RangeInclusive};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
@@ -23,8 +22,6 @@ pub enum Temperature {
 }
 
 impl Temperature {
-    const PREFIX: &'static [u8] = b"#T:";
-
     pub fn range(&self) -> RangeInclusive<i8> {
         match self {
             Temperature::MinusTenToZero => -10..=0,
@@ -39,7 +36,11 @@ impl Temperature {
 }
 
 impl Message for Temperature {
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    const PREFIX: &'static [u8] = b"#T:";
+}
+
+impl ParseFromBytes for Temperature {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Temperature::PREFIX)(bytes)?;
 

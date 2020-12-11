@@ -1,6 +1,7 @@
-use super::{Config, Setup};
-use crate::rf_explorer::{rf_explorer::WriteCommandResult, RfExplorer, SerialPortReader};
-use crate::signal_generator::{Attenuation, PowerLevel};
+use crate::{
+    rf_explorer::{RfExplorer, SerialPortReader, WriteCommandResult},
+    signal_generator::{Attenuation, Config, PowerLevel, Setup},
+};
 use std::fmt::Debug;
 use uom::si::{f64::Frequency, frequency::kilohertz};
 

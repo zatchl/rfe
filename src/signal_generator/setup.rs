@@ -1,4 +1,5 @@
-use crate::Model;
+use crate::rf_explorer::{Message, Model, ParseFromBytes};
+use nom::IResult;
 use std::str;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -23,8 +24,6 @@ impl Setup {
 }
 
 impl crate::rf_explorer::Setup for Setup {
-    const PREFIX: &'static str = "#C3-M:";
-
     fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self {
         Setup {
             main_model,
@@ -34,15 +33,24 @@ impl crate::rf_explorer::Setup for Setup {
     }
 }
 
+impl Message for Setup {
+    const PREFIX: &'static [u8] = b"#C3-M:";
+}
+
+impl ParseFromBytes for Setup {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+        crate::rf_explorer::Setup::parse_from_bytes(bytes)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Message;
     use crate::Model;
 
     #[test]
     fn accept_rfe_gen_setup() {
-        let setup = Setup::from_bytes(b"#C3-M:060,255,01.15\r\n".as_ref())
+        let setup = Setup::parse_from_bytes(b"#C3-M:060,255,01.15\r\n".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeGen);

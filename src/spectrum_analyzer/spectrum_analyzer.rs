@@ -1,11 +1,12 @@
-use crate::rf_explorer::{
-    rf_explorer::{ReadMessageResult, RfeResult, WriteCommandResult},
-    Error, RfExplorer, SerialPortReader,
+use crate::{
+    rf_explorer::{
+        Error, Model, ReadMessageResult, RfExplorer, RfeResult, SerialPortReader,
+        WriteCommandResult,
+    },
+    spectrum_analyzer::{
+        CalcMode, Config, DspMode, InputStage, RadioModule, Setup, Sweep, TrackingStatus, WifiBand,
+    },
 };
-use crate::spectrum_analyzer::{
-    CalcMode, Config, DspMode, InputStage, RadioModule, Setup, Sweep, TrackingStatus, WifiBand,
-};
-use crate::Model;
 use serialport::ClearBuffer;
 use std::{fmt::Debug, ops::RangeInclusive, time::Duration};
 use uom::si::{

@@ -1,4 +1,4 @@
-use crate::rf_explorer::Message;
+use crate::rf_explorer::{Message, ParseFromBytes};
 use nom::{
     bytes::complete::tag,
     bytes::streaming::take,
@@ -17,7 +17,6 @@ impl ScreenData {
     pub const ROWS: usize = 8;
     pub const COLUMNS: usize = 128;
     pub const VERTICAL_PX_PER_ROW: usize = 8;
-    const PREFIX: &'static [u8] = b"$D";
 
     pub fn as_byte_matrix(&self) -> &[[u8; ScreenData::COLUMNS]; ScreenData::ROWS] {
         &self.screen_data_matrix
@@ -25,7 +24,11 @@ impl ScreenData {
 }
 
 impl Message for ScreenData {
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    const PREFIX: &'static [u8] = b"$D";
+}
+
+impl ParseFromBytes for ScreenData {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 

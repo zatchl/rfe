@@ -7,14 +7,10 @@ use nom::{
 };
 use std::{str, str::FromStr};
 
-pub trait Setup {
-    const PREFIX: &'static str;
-
+pub trait Setup: Message + Sized {
     fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self;
-}
 
-impl<T: Setup> Message for T {
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 

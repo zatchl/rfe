@@ -1,10 +1,10 @@
-use crate::rf_explorer::Message;
+use crate::rf_explorer::{Message, ParseFromBytes};
 use chrono::{DateTime, Utc};
 use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::line_ending,
-    combinator::{all_consuming, map, opt},
+    combinator::{all_consuming, map, opt, peek},
     error::{Error, ErrorKind},
     multi::length_data,
     number::complete::{be_u16, u8 as nom_u8},
@@ -13,68 +13,105 @@ use nom::{
 use std::ops::{Add, AddAssign};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Sweep {
-    amplitudes_dbm: Vec<f32>,
-    timestamp: DateTime<Utc>,
+pub enum Sweep {
+    Standard(SweepDataStandard),
+    Ext(SweepDataExt),
+    Large(SweepDataLarge),
 }
 
 impl Sweep {
     pub fn amplitudes_dbm(&self) -> &[f32] {
-        self.amplitudes_dbm.as_slice()
+        match self {
+            Sweep::Standard(sweep_data) => sweep_data.amplitudes_dbm.as_slice(),
+            Sweep::Ext(sweep_data) => sweep_data.amplitudes_dbm.as_slice(),
+            Sweep::Large(sweep_data) => sweep_data.amplitudes_dbm.as_slice(),
+        }
     }
 
     pub fn timestamp(&self) -> DateTime<Utc> {
-        self.timestamp
+        match self {
+            Sweep::Standard(sweep_data) => sweep_data.timestamp,
+            Sweep::Ext(sweep_data) => sweep_data.timestamp,
+            Sweep::Large(sweep_data) => sweep_data.timestamp,
+        }
     }
 }
 
-impl Message for Sweep {
-    // It's possible that this function will be called with fewer amplitudes than specified by the
-    // length field. When that happens, length_data() will return nom::Err::Incomplete.
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+impl ParseFromBytes for Sweep {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
-        let (bytes, prefix) = alt((tag("$S"), tag("$s"), tag("$z")))(bytes)?;
-
-        // Use the prefix to determine how to interpret the length field
-        // Pass the length field parser (nom_u8 or be_u16) to length_data() to get a subslice
-        // containing the amplitudes
-        let (bytes, amps) = match prefix {
-            b"$S" => length_data(nom_u8)(bytes)?,
-            b"$s" => length_data(map(nom_u8, |len| (usize::from(len) + 1) * 16))(bytes)?,
-            b"$z" => length_data(be_u16)(bytes)?,
+        let (bytes, prefix) = peek(alt((tag("$S"), tag("$s"), tag("$z"))))(bytes)?;
+        let sweep = match prefix {
+            b"$S" => Sweep::Standard(SweepDataStandard::parse_from_bytes(bytes)?.1),
+            b"$s" => Sweep::Ext(SweepDataExt::parse_from_bytes(bytes)?.1),
+            b"$z" => Sweep::Large(SweepDataLarge::parse_from_bytes(bytes)?.1),
             _ => return Err(nom::Err::Failure(Error::new(bytes, ErrorKind::Tag))),
         };
 
-        // Convert the amplitude bytes into dBm by dividing them by -2
-        let amplitudes_dbm = amps.iter().map(|&byte| f32::from(byte) / -2.).collect();
-
-        // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
-
-        Ok((
-            bytes,
-            Sweep {
-                amplitudes_dbm,
-                timestamp: Utc::now(),
-            },
-        ))
+        Ok((bytes, sweep))
     }
 }
 
-impl Add for Sweep {
-    type Output = Sweep;
+macro_rules! impl_sweep_data {
+    ($sweep_data:ident, $prefix:expr, $amp_parser:expr) => {
+        #[derive(Debug, Clone, PartialEq)]
+        pub struct $sweep_data {
+            amplitudes_dbm: Vec<f32>,
+            timestamp: DateTime<Utc>,
+        }
 
-    fn add(mut self, mut rhs: Self) -> Self::Output {
-        self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
-        self
-    }
+        impl Message for $sweep_data {
+            const PREFIX: &'static [u8] = $prefix;
+        }
+
+        impl ParseFromBytes for $sweep_data {
+            fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+                // Parse the prefix of the message
+                let (bytes, _) = tag(Self::PREFIX)(bytes)?;
+
+                // Get the slice containing the amplitudes in the sweep data
+                let (bytes, amps) = $amp_parser(bytes)?;
+
+                // Convert the amplitude bytes into dBm by dividing them by -2
+                let amplitudes_dbm = amps.iter().map(|&byte| f32::from(byte) / -2.).collect();
+
+                // Consume any \r or \r\n line endings and make sure there aren't any bytes left
+                let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+
+                Ok((
+                    bytes,
+                    $sweep_data {
+                        amplitudes_dbm,
+                        timestamp: Utc::now(),
+                    },
+                ))
+            }
+        }
+
+        impl Add for $sweep_data {
+            type Output = $sweep_data;
+
+            fn add(mut self, mut rhs: Self) -> Self::Output {
+                self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
+                self
+            }
+        }
+
+        impl AddAssign for $sweep_data {
+            fn add_assign(&mut self, mut rhs: Self) {
+                self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
+            }
+        }
+    };
 }
 
-impl AddAssign for Sweep {
-    fn add_assign(&mut self, mut rhs: Self) {
-        self.amplitudes_dbm.append(&mut rhs.amplitudes_dbm);
-    }
-}
+impl_sweep_data!(SweepDataStandard, b"$S", length_data(nom_u8));
+impl_sweep_data!(
+    SweepDataExt,
+    b"$s",
+    length_data(map(nom_u8, |len| (usize::from(len) + 1) * 16))
+);
+impl_sweep_data!(SweepDataLarge, b"$z", length_data(be_u16));
 
 #[cfg(test)]
 mod tests {
@@ -92,9 +129,9 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
-            sweep.amplitudes_dbm(),
+            sweep_data.amplitudes_dbm,
             &[
                 -7.5, -68.0, -109.0, -26.0, -77.5, -116.5, -123.0, -117.5, -67.5, -56.5, -65.0,
                 -37.0, -35.0, -125.5, -62.0, -93.0, -115.5, -57.5, -99.5, -101.5, -32.0, -56.0,
@@ -122,9 +159,9 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239,
         ];
-        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataExt::parse_from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
-            sweep.amplitudes_dbm(),
+            sweep_data.amplitudes_dbm,
             &[
                 -7.5, -68.0, -109.0, -26.0, -77.5, -116.5, -123.0, -117.5, -67.5, -56.5, -65.0,
                 -37.0, -35.0, -125.5, -62.0, -93.0, -115.5, -57.5, -99.5, -101.5, -32.0, -56.0,
@@ -152,9 +189,9 @@ mod tests {
             175, 179, 36, 21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227,
             20, 92, 6, 229, 120, 125, 239,
         ];
-        let sweep = Sweep::from_bytes(&bytes[..]).unwrap().1;
+        let sweep_data = SweepDataLarge::parse_from_bytes(&bytes[..]).unwrap().1;
         assert_eq!(
-            sweep.amplitudes_dbm(),
+            sweep_data.amplitudes_dbm,
             &[
                 -7.5, -68.0, -109.0, -26.0, -77.5, -116.5, -123.0, -117.5, -67.5, -56.5, -65.0,
                 -37.0, -35.0, -125.5, -62.0, -93.0, -115.5, -57.5, -99.5, -101.5, -32.0, -56.0,
@@ -182,8 +219,8 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125, 239, 100,
         ];
-        let sweep_error = Sweep::from_bytes(&bytes[..]).unwrap_err();
-        assert!(matches!(sweep_error, nom::Err::Error(..)));
+        let sweep_data_error = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap_err();
+        assert!(matches!(sweep_data_error, nom::Err::Error(..)));
     }
 
     #[test]
@@ -198,23 +235,23 @@ mod tests {
             21, 195, 243, 30, 90, 176, 37, 81, 153, 117, 51, 122, 83, 7, 189, 227, 20, 92, 6, 229,
             120, 125,
         ];
-        let sweep_error = Sweep::from_bytes(&bytes[..]).unwrap_err();
-        assert!(matches!(sweep_error, nom::Err::Incomplete(..)));
+        let sweep_data_error = SweepDataStandard::parse_from_bytes(&bytes[..]).unwrap_err();
+        assert!(matches!(sweep_data_error, nom::Err::Incomplete(..)));
     }
 
     #[test]
     fn add_sweeps() {
-        let sweep1 = Sweep {
+        let sweep1 = SweepDataStandard {
             amplitudes_dbm: vec![-120., -110.],
             timestamp: Utc::now(),
         };
 
-        let sweep2 = Sweep {
+        let sweep2 = SweepDataStandard {
             amplitudes_dbm: vec![-100., -90.],
             timestamp: Utc::now(),
         };
 
-        let sweep3 = Sweep {
+        let sweep3 = SweepDataStandard {
             amplitudes_dbm: vec![-80., -70.],
             timestamp: Utc::now(),
         };
@@ -222,20 +259,20 @@ mod tests {
         let sweep = sweep1 + sweep2 + sweep3;
 
         assert_eq!(
-            sweep.amplitudes_dbm(),
+            sweep.amplitudes_dbm,
             &[-120., -110., -100., -90., -80., -70.]
         );
     }
 
     #[test]
     fn add_assign_sweeps() {
-        let mut sweep = Sweep {
+        let mut sweep = SweepDataStandard {
             amplitudes_dbm: vec![-120., -110.],
             timestamp: Utc::now(),
         };
 
         sweep += sweep.clone();
 
-        assert_eq!(sweep.amplitudes_dbm(), &[-120., -110., -120., -110.]);
+        assert_eq!(sweep.amplitudes_dbm, &[-120., -110., -120., -110.]);
     }
 }

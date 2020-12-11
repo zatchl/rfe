@@ -1,4 +1,4 @@
-use crate::{rf_explorer::SerialNumber, Message};
+use crate::rf_explorer::{Message, ParseFromBytes, SerialNumber};
 use num_enum::IntoPrimitive;
 use serialport::{
     ClearBuffer, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortSettings,
@@ -67,7 +67,7 @@ pub trait RfExplorer: Sized {
         write_command(command, self.reader().get_mut())
     }
 
-    fn read_message<T: Message>(&mut self, timeout: Duration) -> ReadMessageResult<T> {
+    fn read_message<T: ParseFromBytes>(&mut self, timeout: Duration) -> ReadMessageResult<T> {
         read_message(self.reader(), timeout)
     }
 
@@ -241,7 +241,7 @@ fn write_command(command: &[u8], port: &mut impl io::Write) -> WriteCommandResul
     Ok(port.write_all(&command_buf)?)
 }
 
-fn read_message<T: Message>(
+fn read_message<T: ParseFromBytes>(
     reader: &mut SerialPortReader,
     timeout: Duration,
 ) -> ReadMessageResult<T> {
@@ -255,7 +255,7 @@ fn read_message<T: Message>(
         // Return the message if it's succesfully parsed
         // Continue reading if parsing is incomplete
         // Clear the message buffer and then continue reading if parsing fails
-        match T::from_bytes(message_buf.as_ref()) {
+        match T::parse_from_bytes(message_buf.as_ref()) {
             Ok(response) => return Ok(response.1),
             Err(nom::Err::Incomplete(_)) => continue,
             _ => message_buf.clear(),

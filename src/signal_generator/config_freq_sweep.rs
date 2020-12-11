@@ -1,5 +1,7 @@
-use super::{Attenuation, PowerLevel, RfPower};
-use crate::Message;
+use crate::{
+    rf_explorer::{Message, ParseFromBytes},
+    signal_generator::{Attenuation, PowerLevel, RfPower},
+};
 use nom::{
     bytes::complete::{tag, take},
     character::complete::line_ending,
@@ -24,8 +26,6 @@ pub struct ConfigFreqSweep {
 }
 
 impl ConfigFreqSweep {
-    const PREFIX: &'static [u8] = b"#C3-F:";
-
     pub fn start_freq_khz(&self) -> f64 {
         self.start_freq_khz
     }
@@ -56,7 +56,11 @@ impl ConfigFreqSweep {
 }
 
 impl Message for ConfigFreqSweep {
-    fn from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
+    const PREFIX: &'static [u8] = b"#C3-F:";
+}
+
+impl ParseFromBytes for ConfigFreqSweep {
+    fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
         // Parse the prefix of the message
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
@@ -122,7 +126,7 @@ mod tests {
     #[test]
     fn parse_config_freq_sweep() {
         let bytes = b"#C3-F:0186525,0005,0001000,0,3,0,00100";
-        let config_freq_sweep = ConfigFreqSweep::from_bytes(bytes.as_ref()).unwrap().1;
+        let config_freq_sweep = ConfigFreqSweep::parse_from_bytes(bytes.as_ref()).unwrap().1;
         assert_eq!(config_freq_sweep.start_freq_khz(), 186_525.);
         assert_eq!(config_freq_sweep.total_steps(), 5);
         assert_eq!(config_freq_sweep.step_freq_khz(), 1000.);
