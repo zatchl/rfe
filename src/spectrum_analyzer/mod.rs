@@ -1,13 +1,13 @@
 mod config;
 mod dsp_mode;
-mod setup;
+mod setup_info;
 mod spectrum_analyzer;
 mod sweep;
 mod tracking_status;
 
 pub use config::Config;
 pub use dsp_mode::DspMode;
-pub use setup::Setup;
+pub use setup_info::SetupInfo;
 pub use spectrum_analyzer::SpectrumAnalyzer;
 pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;

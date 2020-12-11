@@ -1,13 +1,13 @@
 use crate::{
     rf_explorer::{RfExplorer, SerialPortReader, WriteCommandResult},
-    signal_generator::{Attenuation, Config, PowerLevel, Setup},
+    signal_generator::{Attenuation, Config, PowerLevel, SetupInfo},
 };
 use std::fmt::Debug;
 use uom::si::{f64::Frequency, frequency::kilohertz};
 
 pub struct SignalGenerator {
     reader: SerialPortReader,
-    setup: Setup,
+    setup_info: SetupInfo,
     config: Config,
 }
 
@@ -167,13 +167,13 @@ impl SignalGenerator {
 }
 
 impl RfExplorer for SignalGenerator {
-    type Setup = super::Setup;
+    type SetupInfo = super::SetupInfo;
     type Config = super::Config;
 
-    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self {
+    fn new(reader: SerialPortReader, setup_info: Self::SetupInfo, config: Self::Config) -> Self {
         SignalGenerator {
             reader,
-            setup,
+            setup_info,
             config,
         }
     }
@@ -182,15 +182,15 @@ impl RfExplorer for SignalGenerator {
         &mut self.reader
     }
 
-    fn setup(&self) -> Self::Setup {
-        self.setup.clone()
+    fn setup_info(&self) -> Self::SetupInfo {
+        self.setup_info.clone()
     }
 }
 
 impl Debug for SignalGenerator {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SignalGenerator")
-            .field("setup", &self.setup)
+            .field("setup_info", &self.setup_info)
             .field("config", &self.config)
             .finish()
     }

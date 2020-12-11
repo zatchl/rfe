@@ -3,13 +3,13 @@ use nom::IResult;
 use std::str;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Setup {
+pub struct SetupInfo {
     main_model: Model,
     exp_model: Option<Model>,
     fw_version: String,
 }
 
-impl Setup {
+impl SetupInfo {
     pub fn main_model(&self) -> Model {
         self.main_model
     }
@@ -23,9 +23,9 @@ impl Setup {
     }
 }
 
-impl crate::rf_explorer::Setup for Setup {
+impl crate::rf_explorer::SetupInfo for SetupInfo {
     fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self {
-        Setup {
+        SetupInfo {
             main_model,
             exp_model,
             fw_version,
@@ -33,13 +33,13 @@ impl crate::rf_explorer::Setup for Setup {
     }
 }
 
-impl Message for Setup {
+impl Message for SetupInfo {
     const PREFIX: &'static [u8] = b"#C3-M:";
 }
 
-impl ParseFromBytes for Setup {
+impl ParseFromBytes for SetupInfo {
     fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
-        crate::rf_explorer::Setup::parse_from_bytes(bytes)
+        crate::rf_explorer::SetupInfo::parse_from_bytes(bytes)
     }
 }
 
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn accept_rfe_gen_setup() {
-        let setup = Setup::parse_from_bytes(b"#C3-M:060,255,01.15\r\n".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C3-M:060,255,01.15\r\n".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeGen);

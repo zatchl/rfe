@@ -27,14 +27,14 @@ const SERIAL_PORT_SETTINGS: SerialPortSettings = SerialPortSettings {
 };
 
 pub trait RfExplorer: Sized {
-    type Setup: Message;
+    type SetupInfo: Message;
     type Config: Message;
 
-    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self;
+    fn new(reader: SerialPortReader, setup_info: Self::SetupInfo, config: Self::Config) -> Self;
 
     fn reader(&mut self) -> &mut SerialPortReader;
 
-    fn setup(&self) -> Self::Setup;
+    fn setup_info(&self) -> Self::SetupInfo;
 
     fn connect(port_info: &SerialPortInfo) -> Result<Self, ConnectionError> {
         let (port_type, port_name) = (&port_info.port_type, &port_info.port_name);

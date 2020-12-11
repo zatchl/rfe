@@ -7,7 +7,7 @@ use nom::{
 };
 use std::{str, str::FromStr};
 
-pub trait Setup: Message + Sized {
+pub trait SetupInfo: Message + Sized {
     fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self;
 
     fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {

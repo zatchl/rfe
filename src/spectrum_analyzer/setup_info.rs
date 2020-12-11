@@ -3,13 +3,13 @@ use nom::IResult;
 use std::str;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Setup {
+pub struct SetupInfo {
     main_model: Model,
     exp_model: Option<Model>,
     fw_version: String,
 }
 
-impl Setup {
+impl SetupInfo {
     pub fn main_model(&self) -> Model {
         self.main_model
     }
@@ -23,9 +23,9 @@ impl Setup {
     }
 }
 
-impl crate::rf_explorer::Setup for Setup {
+impl crate::rf_explorer::SetupInfo for SetupInfo {
     fn new(main_model: Model, exp_model: Option<Model>, fw_version: String) -> Self {
-        Setup {
+        SetupInfo {
             main_model,
             exp_model,
             fw_version,
@@ -33,13 +33,13 @@ impl crate::rf_explorer::Setup for Setup {
     }
 }
 
-impl Message for Setup {
+impl Message for SetupInfo {
     const PREFIX: &'static [u8] = b"#C2-M:";
 }
 
-impl ParseFromBytes for Setup {
+impl ParseFromBytes for SetupInfo {
     fn parse_from_bytes(bytes: &[u8]) -> IResult<&[u8], Self> {
-        crate::rf_explorer::Setup::parse_from_bytes(bytes)
+        crate::rf_explorer::SetupInfo::parse_from_bytes(bytes)
     }
 }
 
@@ -50,7 +50,7 @@ mod tests {
 
     #[test]
     fn accept_wsub1g_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:003,255,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:003,255,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1G);
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn accept_24g_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:004,255,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:004,255,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::Rfe24G);
@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn accept_ism_combo_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:003,004,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:003,004,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1G);
@@ -80,7 +80,7 @@ mod tests {
 
     #[test]
     fn accept_3g_combo_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:003,005,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:003,005,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1G);
@@ -90,7 +90,7 @@ mod tests {
 
     #[test]
     fn accept_6g_combo_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:006,005,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:006,005,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::Rfe6G);
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn accept_wsub1g_plus_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:010,255,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:010,255,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1GPlus);
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn accept_ism_combo_plus_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:010,012,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:010,012,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1GPlus);
@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn accept_4g_combo_plus_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:010,013,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:010,013,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1GPlus);
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn accept_6g_combo_plus_setup() {
-        let setup = Setup::parse_from_bytes(b"#C2-M:010,014,XX.XXXX".as_ref())
+        let setup = SetupInfo::parse_from_bytes(b"#C2-M:010,014,XX.XXXX".as_ref())
             .unwrap()
             .1;
         assert_eq!(setup.main_model(), Model::RfeWSub1GPlus);
@@ -140,21 +140,21 @@ mod tests {
 
     #[test]
     fn reject_setup_without_main_model() {
-        assert!(Setup::parse_from_bytes(b"#C2-M:255,005,01.12B26".as_ref()).is_err());
+        assert!(SetupInfo::parse_from_bytes(b"#C2-M:255,005,01.12B26".as_ref()).is_err());
     }
 
     #[test]
     fn accept_setup_without_expansion_model() {
-        assert!(Setup::parse_from_bytes(b"#C2-M:006,255,01.12B26".as_ref()).is_ok());
+        assert!(SetupInfo::parse_from_bytes(b"#C2-M:006,255,01.12B26".as_ref()).is_ok());
     }
 
     #[test]
     fn reject_setup_without_firmware_version() {
-        assert!(Setup::parse_from_bytes(b"#C2-M:006,005".as_ref()).is_err());
+        assert!(SetupInfo::parse_from_bytes(b"#C2-M:006,005".as_ref()).is_err());
     }
 
     #[test]
     fn reject_setup_with_incorrect_prefix() {
-        assert!(Setup::parse_from_bytes(b"$C2-M:006,005,01.12B26".as_ref()).is_err());
+        assert!(SetupInfo::parse_from_bytes(b"$C2-M:006,005,01.12B26".as_ref()).is_err());
     }
 }

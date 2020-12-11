@@ -4,7 +4,8 @@ use crate::{
         WriteCommandResult,
     },
     spectrum_analyzer::{
-        CalcMode, Config, DspMode, InputStage, RadioModule, Setup, Sweep, TrackingStatus, WifiBand,
+        CalcMode, Config, DspMode, InputStage, RadioModule, SetupInfo, Sweep, TrackingStatus,
+        WifiBand,
     },
 };
 use serialport::ClearBuffer;
@@ -16,7 +17,7 @@ use uom::si::{
 
 pub struct SpectrumAnalyzer {
     reader: SerialPortReader,
-    setup: Setup,
+    setup_info: SetupInfo,
     config: Config,
 }
 
@@ -28,19 +29,19 @@ impl SpectrumAnalyzer {
     /// Returns the model of the active RF Explorer radio module.
     pub fn active_model(&self) -> Model {
         match self.config.active_radio_module() {
-            RadioModule::Main => self.setup.main_model(),
+            RadioModule::Main => self.setup_info.main_model(),
             RadioModule::Expansion => self
-                .setup
+                .setup_info
                 .expansion_model()
-                .unwrap_or(self.setup.main_model()),
+                .unwrap_or(self.setup_info.main_model()),
         }
     }
 
     /// Returns the model of the inactive RF Explorer radio module.
     pub fn inactive_model(&self) -> Option<Model> {
         match self.config.active_radio_module() {
-            RadioModule::Main => self.setup.expansion_model(),
-            RadioModule::Expansion => Some(self.setup.main_model()),
+            RadioModule::Main => self.setup_info.expansion_model(),
+            RadioModule::Expansion => Some(self.setup_info.main_model()),
         }
     }
 
@@ -253,10 +254,10 @@ impl SpectrumAnalyzer {
 }
 
 impl RfExplorer for SpectrumAnalyzer {
-    fn new(reader: SerialPortReader, setup: Self::Setup, config: Self::Config) -> Self {
+    fn new(reader: SerialPortReader, setup_info: Self::SetupInfo, config: Self::Config) -> Self {
         SpectrumAnalyzer {
             reader,
-            setup,
+            setup_info,
             config,
         }
     }
@@ -265,11 +266,11 @@ impl RfExplorer for SpectrumAnalyzer {
         &mut self.reader
     }
 
-    fn setup(&self) -> Self::Setup {
-        self.setup.clone()
+    fn setup_info(&self) -> Self::SetupInfo {
+        self.setup_info.clone()
     }
 
-    type Setup = crate::spectrum_analyzer::Setup;
+    type SetupInfo = crate::spectrum_analyzer::SetupInfo;
 
     type Config = crate::spectrum_analyzer::Config;
 }
@@ -277,7 +278,7 @@ impl RfExplorer for SpectrumAnalyzer {
 impl Debug for SpectrumAnalyzer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SpectrumAnalyzer")
-            .field("setup", &self.setup)
+            .field("setup_info", &self.setup_info)
             .field("config", &self.config)
             .finish()
     }

@@ -2,7 +2,7 @@ mod config;
 mod config_amp_sweep;
 mod config_cw;
 mod config_freq_sweep;
-mod setup;
+mod setup_info;
 mod signal_generator;
 mod temperature;
 
@@ -10,7 +10,7 @@ pub use config::Config;
 pub use config_amp_sweep::ConfigAmpSweep;
 pub use config_cw::ConfigCw;
 pub use config_freq_sweep::ConfigFreqSweep;
-pub use setup::Setup;
+pub use setup_info::SetupInfo;
 pub use signal_generator::SignalGenerator;
 pub use temperature::Temperature;
 
