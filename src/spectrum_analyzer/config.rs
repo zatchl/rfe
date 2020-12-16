@@ -15,7 +15,7 @@ use uom::si::{
     frequency::{hertz, kilohertz},
 };
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Config {
     start_freq_khz: f64,
     step_freq_hz: f64,

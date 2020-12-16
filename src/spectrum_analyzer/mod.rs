@@ -52,6 +52,12 @@ pub enum Mode {
     Unknown = 255,
 }
 
+impl Default for Mode {
+    fn default() -> Self {
+        Mode::SpectrumAnalyzer
+    }
+}
+
 #[derive(Debug, Copy, Clone, TryFromPrimitive, IntoPrimitive, Eq, PartialEq)]
 #[repr(u8)]
 pub enum CalcMode {
@@ -67,6 +73,12 @@ impl FromStr for RadioModule {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
+    }
+}
+
+impl Default for RadioModule {
+    fn default() -> Self {
+        RadioModule::Main
     }
 }
 
