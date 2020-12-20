@@ -1,3 +1,4 @@
+mod command;
 mod message;
 mod model;
 mod rf_explorer;
@@ -5,6 +6,7 @@ mod screen_data;
 mod serial_number;
 mod setup_info;
 
+pub(crate) use command::Command;
 pub use message::{Message, ParseFromBytes};
 pub use model::Model;
 pub use rf_explorer::{

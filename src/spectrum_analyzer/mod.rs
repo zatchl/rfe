@@ -1,3 +1,4 @@
+mod command;
 mod config;
 mod dsp_mode;
 mod setup_info;
@@ -5,6 +6,7 @@ mod spectrum_analyzer;
 mod sweep;
 mod tracking_status;
 
+pub(crate) use command::Command;
 pub use config::Config;
 pub use dsp_mode::DspMode;
 pub use setup_info::SetupInfo;

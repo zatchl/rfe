@@ -1,3 +1,4 @@
+mod command;
 mod config;
 mod config_amp_sweep;
 mod config_cw;
@@ -6,6 +7,7 @@ mod setup_info;
 mod signal_generator;
 mod temperature;
 
+pub(crate) use command::Command;
 pub use config::Config;
 pub use config_amp_sweep::ConfigAmpSweep;
 pub use config_cw::ConfigCw;
