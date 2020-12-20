@@ -1,7 +1,6 @@
 use super::Command;
 use serialport::{
-    open_with_settings, DataBits, FlowControl, Parity, SerialPort, SerialPortInfo,
-    SerialPortSettings, SerialPortType, StopBits,
+    DataBits, FlowControl, Parity, SerialPort, SerialPortInfo, SerialPortType, StopBits,
 };
 use std::{
     io::{self, BufReader},
@@ -9,20 +8,17 @@ use std::{
 };
 use thiserror::Error;
 
-const SERIAL_PORT_SETTINGS: SerialPortSettings = SerialPortSettings {
-    baud_rate: 500_000,
-    data_bits: DataBits::Eight,
-    flow_control: FlowControl::None,
-    parity: Parity::None,
-    stop_bits: StopBits::One,
-    timeout: Duration::from_secs(1),
-};
-
 pub(crate) fn open(port_info: &SerialPortInfo) -> ConnectionResult<SerialPortReader> {
     let mut serial_port = {
         let (port_type, port_name) = (&port_info.port_type, &port_info.port_name);
         if let SerialPortType::UsbPort(_) = port_type {
-            Ok(open_with_settings(port_name, &SERIAL_PORT_SETTINGS)?)
+            Ok(serialport::new(port_name, 500_000)
+                .data_bits(DataBits::Eight)
+                .flow_control(FlowControl::None)
+                .parity(Parity::None)
+                .stop_bits(StopBits::One)
+                .timeout(Duration::from_secs(1))
+                .open()?)
         } else {
             Err(ConnectionError::NotAnRfExplorer)
         }
