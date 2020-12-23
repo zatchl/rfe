@@ -1,6 +1,7 @@
 mod command;
 mod config;
 mod dsp_mode;
+mod parsers;
 mod setup_info;
 mod spectrum_analyzer;
 mod sweep;
@@ -15,7 +16,6 @@ pub use sweep::Sweep;
 pub use tracking_status::TrackingStatus;
 
 use num_enum::{IntoPrimitive, TryFromPrimitive};
-use std::{convert::TryFrom, str::FromStr};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, IntoPrimitive)]
 #[repr(u8)]
@@ -70,32 +70,8 @@ pub enum CalcMode {
     MaxHold,
 }
 
-impl FromStr for RadioModule {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
-    }
-}
-
 impl Default for RadioModule {
     fn default() -> Self {
         RadioModule::Main
-    }
-}
-
-impl FromStr for Mode {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
-    }
-}
-
-impl FromStr for CalcMode {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::try_from(u8::from_str(s).map_err(|_| ())?).map_err(|_| ())
     }
 }

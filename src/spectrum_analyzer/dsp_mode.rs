@@ -1,20 +1,14 @@
-use crate::rf_explorer::{Message, ParseFromBytes};
-use nom::{
-    bytes::complete::tag,
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    number::complete::u8 as nom_u8,
-    IResult,
-};
+use crate::rf_explorer::{parsers::*, Message, ParseFromBytes};
+use nom::{bytes::complete::tag, combinator::map_res, IResult};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::convert::TryFrom;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum DspMode {
-    Auto = b'0',
-    Filter = b'1',
-    Fast = b'2',
+    Auto = 0,
+    Filter,
+    Fast,
 }
 
 impl Message for DspMode {
@@ -27,10 +21,10 @@ impl ParseFromBytes for DspMode {
         let (bytes, _) = tag(DspMode::PREFIX)(bytes)?;
 
         // Parse the DSP mode
-        let (bytes, dsp_mode) = map_res(nom_u8, DspMode::try_from)(bytes)?;
+        let (bytes, dsp_mode) = map_res(parse_num::<u8>(1u8), DspMode::try_from)(bytes)?;
 
         // Consume \r or \r\n line ending and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((bytes, dsp_mode))
     }

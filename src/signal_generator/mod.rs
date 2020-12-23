@@ -3,6 +3,7 @@ mod config;
 mod config_amp_sweep;
 mod config_cw;
 mod config_freq_sweep;
+mod parsers;
 mod setup_info;
 mod signal_generator;
 mod temperature;
@@ -21,22 +22,22 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum Attenuation {
-    On = b'0',
-    Off = b'1',
+    On = 0,
+    Off,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum PowerLevel {
-    Lowest = b'0',
-    Low = b'1',
-    High = b'2',
-    Highest = b'3',
+    Lowest = 0,
+    Low,
+    High,
+    Highest,
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
 #[repr(u8)]
 pub enum RfPower {
-    On = b'0',
-    Off = b'1',
+    On = 0,
+    Off,
 }

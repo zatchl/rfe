@@ -1,18 +1,8 @@
 use crate::{
-    rf_explorer::{Message, ParseFromBytes},
-    signal_generator::{Attenuation, PowerLevel, RfPower},
+    rf_explorer::{parsers::*, Message, ParseFromBytes},
+    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
-use nom::{
-    bytes::complete::{tag, take},
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    number::complete::u8 as nom_u8,
-    IResult,
-};
-use std::{
-    convert::TryFrom,
-    str::{self, FromStr},
-};
+use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ConfigCw {
@@ -60,42 +50,40 @@ impl ParseFromBytes for ConfigCw {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the CW frequency
-        let (bytes, cw_freq_khz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, cw_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // The CW frequency is sent twice. Ignore the second occurrence.
-        let (bytes, _): (_, f64) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, _): (_, f64) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the total steps
-        let (bytes, total_steps) =
-            map_res(map_res(take(4u8), str::from_utf8), FromStr::from_str)(bytes)?;
+        let (bytes, total_steps) = parse_num(4u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the step frequency
-        let (bytes, step_freq_khz) =
-            map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, step_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the attenuation
-        let (bytes, attenuation) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, attenuation) = parse_attenuation(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the power level
-        let (bytes, power_level) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, power_level) = parse_power_level(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the rf power
-        let (bytes, rf_power) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, rf_power) = parse_rf_power(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((
             bytes,

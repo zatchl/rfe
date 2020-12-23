@@ -1,18 +1,8 @@
 use crate::{
-    rf_explorer::{Message, ParseFromBytes},
-    signal_generator::{Attenuation, PowerLevel, RfPower},
+    rf_explorer::{parsers::*, Message, ParseFromBytes},
+    signal_generator::{parsers::*, Attenuation, PowerLevel, RfPower},
 };
-use nom::{
-    bytes::complete::{tag, take},
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    number::complete::u8 as nom_u8,
-    IResult,
-};
-use std::{
-    convert::TryFrom,
-    str::{self, FromStr},
-};
+use nom::{bytes::complete::tag, IResult};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ConfigAmpSweep {
@@ -70,47 +60,45 @@ impl ParseFromBytes for ConfigAmpSweep {
         let (bytes, _) = tag(Self::PREFIX)(bytes)?;
 
         // Parse the cw frequency
-        let (bytes, cw_freq_khz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, cw_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the sweep power steps
-        let (bytes, sweep_power_steps) =
-            map_res(map_res(take(4u8), str::from_utf8), FromStr::from_str)(bytes)?;
+        let (bytes, sweep_power_steps) = parse_num(4u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the start attenuation
-        let (bytes, start_attenuation) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, start_attenuation) = parse_attenuation(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the start power level
-        let (bytes, start_power_level) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, start_power_level) = parse_power_level(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the stop attenuation
-        let (bytes, stop_attenuation) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, stop_attenuation) = parse_attenuation(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the stop power level
-        let (bytes, stop_power_level) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, stop_power_level) = parse_power_level(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the rf power
-        let (bytes, rf_power) = map_res(nom_u8, TryFrom::try_from)(bytes)?;
+        let (bytes, rf_power) = parse_rf_power(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the sweep delay
-        let (bytes, sweep_delay_ms) =
-            map_res(map_res(take(5u8), str::from_utf8), FromStr::from_str)(bytes)?;
+        let (bytes, sweep_delay_ms) = parse_sweep_delay_ms(bytes)?;
 
         // Consume any \r or \r\n line endings and make sure there aren't any bytes left
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((
             bytes,

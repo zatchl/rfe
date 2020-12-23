@@ -1,15 +1,8 @@
 use crate::{
-    rf_explorer::{Message, ParseFromBytes},
-    spectrum_analyzer::{CalcMode, Mode, RadioModule},
+    rf_explorer::{parsers::*, Message, ParseFromBytes},
+    spectrum_analyzer::{parsers::*, CalcMode, Mode, RadioModule},
 };
-use nom::{
-    branch::alt,
-    bytes::complete::{tag, take},
-    character::complete::line_ending,
-    combinator::{all_consuming, map_res, opt},
-    IResult,
-};
-use std::str::{self, FromStr};
+use nom::{branch::alt, bytes::complete::tag, combinator::opt, IResult};
 use uom::si::{
     f64::Frequency,
     frequency::{hertz, kilohertz},
@@ -29,7 +22,7 @@ pub struct Config {
     max_span_khz: f64,
     rbw_khz: Option<f64>,
     amp_offset_db: Option<i16>,
-    calculator_mode: Option<CalcMode>,
+    calc_mode: Option<CalcMode>,
 }
 
 impl Config {
@@ -86,8 +79,8 @@ impl Config {
         self.amp_offset_db
     }
 
-    pub fn calculator_mode(&self) -> Option<CalcMode> {
-        self.calculator_mode
+    pub fn calc_mode(&self) -> Option<CalcMode> {
+        self.calc_mode
     }
 }
 
@@ -101,88 +94,75 @@ impl ParseFromBytes for Config {
         let (bytes, _) = tag(Config::PREFIX)(bytes)?;
 
         // Parse the start frequency
-        let (bytes, start_freq_khz) =
-            map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, start_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the stop frequency
-        let (bytes, step_freq_hz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, step_freq_hz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the max amplitude
-        let (bytes, max_amp_dbm) =
-            map_res(map_res(take(4u8), str::from_utf8), FromStr::from_str)(bytes)?;
+        let (bytes, max_amp_dbm) = parse_amplitude(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the min amplitude
-        let (bytes, min_amp_dbm) =
-            map_res(map_res(take(4u8), str::from_utf8), FromStr::from_str)(bytes)?;
+        let (bytes, min_amp_dbm) = parse_amplitude(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the number of points in a sweep
         // 0-9999 uses 4 bytes and 10000+ uses 5 bytes
         // Try to parse using 5 bytes first and if that doesn't work fall back to 4 bytes
-        let (bytes, sweep_points) = alt((
-            map_res(map_res(take(5u8), str::from_utf8), FromStr::from_str),
-            map_res(map_res(take(4u8), str::from_utf8), FromStr::from_str),
-        ))(bytes)?;
+        let (bytes, sweep_points) = alt((parse_num(5u8), parse_num(4u8)))(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the active radio module
-        let (bytes, active_radio_module) =
-            map_res(map_res(take(1u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, active_radio_module) = parse_radio_module(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the mode
-        let (bytes, mode) = map_res(map_res(take(3u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, mode) = parse_mode(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the minimum frequency
-        let (bytes, min_freq_khz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, min_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum frequency
-        let (bytes, max_freq_khz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, max_freq_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = tag(",")(bytes)?;
+        let (bytes, _) = parse_comma(bytes)?;
 
         // Parse the maximum span
-        let (bytes, max_span_khz) = map_res(map_res(take(7u8), str::from_utf8), str::parse)(bytes)?;
+        let (bytes, max_span_khz) = parse_frequency(7u8)(bytes)?;
 
-        let (bytes, _) = opt(tag(","))(bytes)?;
+        let (bytes, _) = opt(parse_comma)(bytes)?;
 
         // Parse the RBW
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, rbw_khz) = opt(map_res(map_res(take(5u8), str::from_utf8), str::parse))(bytes)?;
+        let (bytes, rbw_khz) = opt(parse_frequency(5u8))(bytes)?;
 
-        let (bytes, _) = opt(tag(","))(bytes)?;
+        let (bytes, _) = opt(parse_comma)(bytes)?;
 
         // Parse the amplitude offset
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, amp_offset_db) = opt(map_res(
-            map_res(take(4u8), str::from_utf8),
-            FromStr::from_str,
-        ))(bytes)?;
+        let (bytes, amp_offset_db) = opt(parse_amplitude)(bytes)?;
 
-        let (bytes, _) = opt(tag(","))(bytes)?;
+        let (bytes, _) = opt(parse_comma)(bytes)?;
 
         // Parse the calculator mode
         // This field is optional because it's not sent by older RF Explorers
-        let (bytes, calculator_mode) = opt(map_res(
-            map_res(take(3u8), str::from_utf8),
-            FromStr::from_str,
-        ))(bytes)?;
+        let (bytes, calc_mode) = opt(parse_calc_mode)(bytes)?;
 
         // Consume \n or \r\n line endings and make sure there aren't any bytes left afterwards
-        let (bytes, _) = all_consuming(opt(line_ending))(bytes)?;
+        let (bytes, _) = parse_opt_line_ending(bytes)?;
 
         Ok((
             bytes,
@@ -199,7 +179,7 @@ impl ParseFromBytes for Config {
                 max_span_khz,
                 rbw_khz,
                 amp_offset_db,
-                calculator_mode,
+                calc_mode,
             },
         ))
     }
@@ -226,7 +206,7 @@ mod tests {
         assert_eq!(config.max_span(), Frequency::new::<kilohertz>(600_000.));
         assert_eq!(config.rbw(), Some(Frequency::new::<kilohertz>(200.)));
         assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calculator_mode(), Some(CalcMode::Normal));
+        assert_eq!(config.calc_mode(), Some(CalcMode::Normal));
     }
 
     #[test]
@@ -246,7 +226,7 @@ mod tests {
         assert_eq!(config.max_span(), Frequency::new::<kilohertz>(959950.));
         assert_eq!(config.rbw(), Some(Frequency::new::<kilohertz>(110.)));
         assert_eq!(config.amp_offset_db(), Some(0));
-        assert_eq!(config.calculator_mode(), Some(CalcMode::Normal));
+        assert_eq!(config.calc_mode(), Some(CalcMode::Normal));
     }
 
     #[test]
@@ -255,7 +235,7 @@ mod tests {
         let config = Config::parse_from_bytes(bytes.as_ref()).unwrap().1;
         assert_eq!(config.rbw(), None);
         assert_eq!(config.amp_offset_db(), None);
-        assert_eq!(config.calculator_mode(), None);
+        assert_eq!(config.calc_mode(), None);
     }
 
     #[test]

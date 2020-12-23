@@ -1,6 +1,7 @@
 mod command;
 mod message;
 mod model;
+pub(crate) mod parsers;
 mod rf_explorer;
 mod screen_data;
 mod serial_number;
